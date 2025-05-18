@@ -1,1 +1,1 @@
-web: gunicorn myproject.wsgi
+web: gunicorn simpli_budget.wsgi
