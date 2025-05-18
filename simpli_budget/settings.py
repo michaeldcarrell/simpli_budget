@@ -27,6 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     'test-django-6fd04c58ba3a.herokuapp.com',
+    'budget.testing-carrell.site',
     'testing-carrell.site',
     'localhost',
     '127.0.0.1',
