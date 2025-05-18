@@ -26,7 +26,8 @@ SECRET_KEY = "REMOVED-ROTATED-SECRET"
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'rodent-driving-awfully.ngrok-free.app',
+    'test-django-6fd04c58ba3a.herokuapp.com',
+    'testing-carrell.site',
     'localhost',
     '127.0.0.1',
 ]
