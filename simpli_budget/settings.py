@@ -43,9 +43,31 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google"
 ]
 
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "SCOPE": [
+            "profile",
+            "email"
+        ],
+        "AUTH_PARAMS": {"access_type": "offline"}
+    }
+}
+
+LOGIN_URL = "/accounts/google/login"
+SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_ONLY = True
+ACCOUNT_EMAIL_VERIFICATION = "none"
+ACCOUNT_ADAPTER = 'simpli_budget.adapter.CustomAccountAdapter'
+SOCIALACCOUNT_ADAPTER = 'simpli_budget.adapter.CustomSocialAccountAdapter'
+
 MIDDLEWARE = [
+    "allauth.account.middleware.AccountMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -81,8 +103,12 @@ WSGI_APPLICATION = "simpli_budget.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "simplibudget",
+        "USER": "mdc_admin",
+        "PASSWORD": "z+:Q_g2*q32sQG4L",
+        "HOST": "34.55.159.77",
+        "POST": "5432"
     }
 }
 
@@ -122,8 +148,19 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend"
+)
+
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
