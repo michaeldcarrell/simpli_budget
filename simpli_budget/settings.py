@@ -46,7 +46,9 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
-    "allauth.socialaccount.providers.google"
+    "allauth.socialaccount.providers.google",
+    "rest_framework",
+    "api"
 ]
 
 SOCIALACCOUNT_PROVIDERS = {
@@ -108,7 +110,11 @@ DATABASES = {
         "USER": "mdc_admin",
         "PASSWORD": "z+:Q_g2*q32sQG4L",
         "HOST": "34.55.159.77",
-        "POST": "5432"
+        "POST": "5432",
+        #  Use this when utilizing python manage.py inspectdb > models.py
+        # 'OPTIONS': {
+        #     'options': '-c search_path=budget'
+        # }
     }
 }
 
