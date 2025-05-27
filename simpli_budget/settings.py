@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
     "rest_framework",
+    "simpli_budget",
     "api"
 ]
 
@@ -106,6 +107,7 @@ WSGI_APPLICATION = "simpli_budget.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
+        "DATABASE": "simplibudget",
         "NAME": "simplibudget",
         "USER": "mdc_admin",
         "PASSWORD": "z+:Q_g2*q32sQG4L",

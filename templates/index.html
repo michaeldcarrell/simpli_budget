@@ -1,4 +1,18 @@
 {% extends "_layout.html" %}
 {% block body %}
-    <h1>Hello World</h1>
+<ul class="list-group">
+{% for section in budget_month.category_types %}
+    <li class="list-group-item">
+        {{ section.category_type.category_type_name }}
+        <ul class="list-group">
+        {% for category in section.categories %}
+            <li class="list-group-item">
+                {{ category.category.category_name }}
+                {{ category.month_total }}
+            </li>
+        {% endfor %}
+        </ul>
+    </li>
+{% endfor %}
+</ul>
 {% endblock %}
