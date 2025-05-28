@@ -1,0 +1,14 @@
+{% extends "_layout.html" %}
+{% block body %}
+    {% for input in inputs %}
+        {{ input.get_html|safe }}
+    {% endfor %}
+    <div class="row">
+        <label for="category">Category</label>
+        <select id="category" class="form-control">
+            {% for category in categories %}
+                <option value="{{ category.category_id }}" {% if category.category_id == transaction.category_id %}selected{% endif %}>{{ category.category_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+{% endblock %}

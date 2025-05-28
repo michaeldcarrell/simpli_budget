@@ -6,5 +6,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
     path("", views.Index.as_view(), name="index"),
+    path("categories", views.Categories.as_view(), name="categories"),
+    path("categories/<str:category_id>", views.Category.as_view(), name="category"),
+    path("transaction/<str:transaction_id>", views.Transaction.as_view(), name="transaction"),
     path("logout", views.Logout.as_view(), name="logout"),
 ]

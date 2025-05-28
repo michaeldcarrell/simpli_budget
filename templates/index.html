@@ -8,7 +8,7 @@
         {% for category in section.categories %}
             <li class="list-group-item">
                 {{ category.category.category_name }}
-                {{ category.month_total }}
+                {{ category.month_total_display }}
             </li>
         {% endfor %}
         </ul>
