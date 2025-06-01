@@ -37,6 +37,14 @@ class Date(models.Model):
     holiday_name = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField()
 
+    @property
+    def year_month_display(self):
+        return f"{self.month_name} - {self.year}"
+
+    @property
+    def year_month_short_display(self):
+        return f"{self.month_name_short} - {self.year}"
+
     class Meta:
         managed = False
         db_table = 'date'
@@ -84,16 +92,27 @@ class Categories(models.Model):
         unique_together = (('category_type', 'category_name'),)
 
 
+class Month:
+    def __init__(self, year_month: int):
+        self.year_month = year_month
+        self.start_of_month_date = Date.objects.filter(year_month=year_month).order_by('date').first()
+        self.end_of_month_date = Date.objects.filter(year_month=year_month).order_by('date').last()
+        self.name = f"{self.start_of_month_date.month_name}, {self.start_of_month_date.year}"
+        self.name_short = f"{self.start_of_month_date.month_name_short}, {self.start_of_month_date.year}"
+
+
 class CategoryMonth:
     def __init__(self, category: Categories, year_month: int):
         self.category = category
+        self.month = Month(year_month=year_month)
         self.month_total = category.monthly_amount(year_month)
         self.month_total_display = '${:,.2f}'.format(self.month_total)
+        self.transactions = category.transactions_set.filter(date__year_month=year_month)
 
 
 class CategoryTypeMonth:
     def __init__(self, category_type: CategoryType, year_month: int, include_hidden: bool = False):
-        self.year_month = year_month
+        self.month = Month(year_month=year_month)
         self.category_type = category_type
         self.categories = self.get_month_categories(include_hidden)
 
@@ -184,7 +203,8 @@ class Transactions(models.Model):
 
     @property
     def display_amount(self):
-        return -1 * self.amount if self.category.category_type.invert_amounts else self.amount
+        value = -1 * self.amount if self.category.category_type.invert_amounts else self.amount
+        return f"${value:,.2f}"
 
     class Meta:
         managed = False

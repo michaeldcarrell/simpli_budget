@@ -1,0 +1,16 @@
+{% extends "_layout.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block body %}
+    <h3 style="margin-top: 10px;">{{ category_month.category.category_name }}</h3>
+    {% for transaction in category_month.transactions %}
+    <div class="row" style="margin-top: 5px;">
+        <a href="/transaction/{{ transaction.transaction_id }}" class="card" style="width: 100%; text-decoration: none; cursor: pointer;">
+            <div class="card-body">
+                <h5 class="card-title">{{ transaction.name }}</h5>
+                <h6 class="card-subtitle mb-2 text-body-secondary">{{ transaction.date.date }}</h6>
+                <h5 class="card-text">{{ transaction.display_amount }}</h5>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+{% endblock %}

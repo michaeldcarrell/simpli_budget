@@ -10,6 +10,7 @@ class Transaction(LoginRequiredMixin, View):
         transaction = Transactions.objects.get(transaction_id=transaction_id)
         categories = Categories.objects.filter(category_type__user_id=request.user.id)
         context = {
+            'title': transaction.name,
             'transaction': transaction,
             'categories': categories,
             'inputs': [
