@@ -6,6 +6,7 @@ from simpli_budget.models import *
 from datetime import datetime as dt
 from simpli_budget.views.categories import Categories, Category
 from simpli_budget.views.transaction import Transaction
+from simpli_budget.views.budget import BudgetCategory
 
 
 class Index(LoginRequiredMixin, View):

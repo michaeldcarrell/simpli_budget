@@ -1,4 +1,5 @@
 {% extends "_layout.html" %}
+{% block title %}{{ title }}{% endblock %}
 {% block body %}
     {% for input in inputs %}
         {{ input.get_html|safe }}
