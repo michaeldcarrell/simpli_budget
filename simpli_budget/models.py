@@ -122,6 +122,7 @@ class BudgetMonth:
         ]
         self.year_month = year_month
 
+
 class AccessTokens(models.Model):
     access_token_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING)
