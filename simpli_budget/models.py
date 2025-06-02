@@ -124,7 +124,7 @@ class CategoryTypeMonth:
         return [
             CategoryMonth(
                 category=category,
-                year_month=self.year_month
+                year_month=self.month.year_month
             ) for category in categories
         ]
 
