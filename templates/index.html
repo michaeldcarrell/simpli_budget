@@ -5,11 +5,11 @@
     <li class="list-group-item">
         {{ section.category_type.category_type_name }}
         <ul class="list-group">
-        {% for category in section.categories %}
-            <li class="list-group-item">
-                {{ category.category.category_name }}
-                {{ category.month_total_display }}
-            </li>
+        {% for category_month in section.categories %}
+            <a class="list-group-item" href="/budget/category/{{ category_month.category.category_id }}">
+                {{ category_month.category.category_name }}
+                {{ category_month.month_total_display }}
+            </a>
         {% endfor %}
         </ul>
     </li>
