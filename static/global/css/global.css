@@ -1,0 +1,29 @@
+#loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(255, 255, 255, 0.9); /* semi-transparent white */
+  z-index: 9999; /* on top of everything */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hidden {
+    display: none!important;
+}
+
+.row-card {
+    border: 1px black solid;
+    border-radius: 5px;
+    color: black;
+    margin: 3px 0px;
+}
+
+.card-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
