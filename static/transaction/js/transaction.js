@@ -3,12 +3,19 @@ let controller = function() {
         categorySelector: document.getElementById('category'),
     }
 
+    let getTransactionId = function() {
+        let path = window.location.pathname.split('/');
+        return path[path.length - 1];
+    }
+
     let updateTransaction = function() {
         let category_id = objs.categorySelector.value;
-        let transaction_id = window.location.pathname.split('/')[-1];
+        let transaction_id = getTransactionId();
+        let token = getCSRFToken();
         fetch('/api/transaction', {
             method: 'POST',
             headers: {
+                'X-CSRFToken': token,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -21,13 +28,16 @@ let controller = function() {
                 body: await response.json()
             }
         }).then(data => {
-            console.log(data);
+            if (data.status_code !== 200) {
+                alert(`Transaction Update Failed: \nStatus Code: ${data.status_code}\nBody: ${data.body}`)
+            }
+        }).catch(e => {
+            alert(`Transaction Failed: ${e.message}`)
         })
     }
 
     let init = function() {
         objs.categorySelector.addEventListener('change', function() {
-            console.log('changed category:', objs.categorySelector.value);
             updateTransaction()
         })
     }();

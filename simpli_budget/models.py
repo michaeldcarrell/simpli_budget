@@ -3,6 +3,25 @@ from django.conf import settings
 from django.db.models import QuerySet
 
 
+def money_as_float(field):
+    val = field.replace("$", "")
+    val = val.replace(",", "")
+    return float(val)
+
+def money_display(field, amount_inverted: bool = False):
+    value = -1 * field if amount_inverted else field
+    return f"${value:,.2f}"
+
+def user_to_dict(user: settings.AUTH_USER_MODEL) -> dict:
+    return {
+        'id': user.id,
+        'email': user.email,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'date_joined': user.date_joined.isoformat(),
+    }
+
+
 class UserAttributes(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, models.DO_NOTHING, primary_key=True)
     show_hidden = models.BooleanField()
@@ -45,6 +64,10 @@ class Date(models.Model):
     def year_month_short_display(self):
         return f"{self.month_name_short} - {self.year}"
 
+    @property
+    def date_display(self):
+        return f"{self.date.year}-{self.date.month}-{self.date.day}"
+
     class Meta:
         managed = False
         db_table = 'date'
@@ -60,6 +83,21 @@ class CategoryType(models.Model):
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
 
+    def to_dict(self, public: bool = True, include_user: bool = False) -> dict:
+        return_dict = {
+            'category_type_id': self.category_type_id,
+            'owner': user_to_dict(self.user),
+            'category_type_name': self.category_type_name,
+            'invert_amounts': self.invert_amounts,
+            'hidden': self.hidden,
+            'sort_index': self.sort_index,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+        }
+        if not include_user:
+            del return_dict['owner']
+        return return_dict
+
     class Meta:
         managed = False
         db_table = '"budget"."category_type"'
@@ -70,12 +108,29 @@ class Categories(models.Model):
     category_id = models.AutoField(primary_key=True)
     category_type = models.ForeignKey(CategoryType, models.DO_NOTHING)
     category_name = models.CharField(max_length=128)
-    default_monthly_amount = models.TextField(blank=True, null=True)  # This field type is a guess.
+    _default_monthly_amount = models.TextField(blank=True, null=True, db_column='default_monthly_amount')  # This field type is a guess.
     sort_index = models.IntegerField()
     hidden = models.BooleanField()
     deleted = models.BooleanField()
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
+
+    @property
+    def default_monthly_amount(self):
+        return money_as_float(self._default_monthly_amount)
+
+    def to_dict(self, public: bool = True, include_user: bool = False) -> dict:
+        return {
+            'category_id': self.category_id,
+            'category_type': self.category_type.to_dict(public=public, include_user=include_user),
+            'category_name': self.category_name,
+            'default_monthly_amount': self.default_monthly_amount,
+            'sort_index': self.sort_index,
+            'hidden': self.hidden,
+            'deleted': self.deleted,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+        }
 
     def monthly_amount(self, year_month: int) -> float:
         monthly_amount = 0
@@ -151,6 +206,20 @@ class AccessTokens(models.Model):
     deleted = models.BooleanField(blank=True, null=True)
     institution_id = models.CharField(max_length=64, blank=True, null=True)
 
+    def to_dict(self, public: bool = True):
+        return_dict = {
+            "access_token_id": self.access_token_id,
+            "user": user_to_dict(self.user),
+            "access_token": self.access_token,
+            "institution_id": self.institution_id,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "deleted": self.deleted,
+        }
+        if public:
+            del return_dict['access_token']
+        return return_dict
+
     class Meta:
         managed = False
         db_table = '"plaid"."access_tokens"'
@@ -165,11 +234,37 @@ class Accounts(models.Model):
     name = models.CharField(max_length=128)
     official_name = models.CharField(max_length=128, blank=True, null=True)
     given_name = models.CharField(max_length=128, blank=True, null=True)
-    balance = models.TextField(blank=True, null=True)  # This field type is a guess.
+    _balance = models.TextField(blank=True, null=True, db_column='balance')  # This field type is a guess.
     transactions_last_updated_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
     deleted = models.BooleanField(blank=True, null=True)
+
+    @property
+    def balance(self):
+        return money_as_float(self._balance)
+
+    def to_dict(self, public: bool = True, include_user: bool = False):
+        return_dict = {
+            'account_id': self.account_id,
+            'access_token': self.access_token.to_dict(public=public),
+            'owner': user_to_dict(self.user),
+            'type': self.type,
+            'sub_type': self.sub_type,
+            'name': self.name,
+            'official_name': self.official_name,
+            'given_name': self.given_name,
+            'balance': self.balance,
+            'transactions_last_updated_at': self.transactions_last_updated_at.isoformat(),
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+            'deleted': self.deleted,
+        }
+        if not include_user:
+            del return_dict['owner']
+        if public:
+            del return_dict['access_token']
+        return return_dict
 
     class Meta:
         managed = False
@@ -197,14 +292,42 @@ class Transactions(models.Model):
 
     @property
     def amount(self):
-        amount = self._amount.replace('$', '')
-        amount = amount.replace(',', '')
-        return float(amount)
+        return money_as_float(self._amount)
 
     @property
     def display_amount(self):
-        value = -1 * self.amount if self.category.category_type.invert_amounts else self.amount
-        return f"${value:,.2f}"
+        return money_display(
+            field=self.amount,
+            amount_inverted=self.category.category_type.invert_amounts
+        )
+
+    @property
+    def user(self):
+        return self.account.user
+
+    def to_dict(self, public: bool = True):
+        pending_transaction = self.pending_transaction.to_dict() if self.pending_transaction else {}
+        return_dict = {
+            'transaction_id': self.transaction_id,
+            'pending_transaction_id': pending_transaction.get('transaction_id'),
+            'account': self.account.to_dict(public=public, include_user=False),
+            'category': self.category.to_dict(public=public, include_user=False),
+            'merchant_entity_id': self.merchant_entity_id,
+            'transaction_type': self.transaction_type,
+            'name': self.name,
+            'merchant_name': self.merchant_name,
+            'iso_currency_code': self.iso_currency_code,
+            'date': self.date.date_display,
+            'authorized_date': self.authorized_date.isoformat(),
+            'pending': self.pending,
+            'amount': self.amount,
+            'website': self.website,
+            'logo_url': self.logo_url,
+            'owner': user_to_dict(self.user),
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+        }
+        return return_dict
 
     class Meta:
         managed = False
