@@ -48,9 +48,16 @@ INSTALLED_APPS = [
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
     "rest_framework",
+    "rest_framework.authtoken",
     "simpli_budget",
     "api"
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    )
+}
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
