@@ -15,3 +15,17 @@ let getCookie = (name) => {
 let getCSRFToken = () => {
     return getCookie('csrftoken');
 }
+
+class Loader {
+    constructor() {
+        this.element = document.getElementById('loading-overlay');
+    }
+
+    show() {
+        this.element.classList.remove('hidden');
+    }
+
+    resolve() {
+        this.element.classList.add('hidden');
+    }
+}

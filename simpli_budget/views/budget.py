@@ -13,6 +13,7 @@ class BudgetCategory(LoginRequiredMixin, View):
         context = {
             "title": f"{category.category_name} - {category_month.month.name_short}",
             "category_month": category_month,
+            'categories': Categories.objects.filter(category_type__user_id=request.user.id, hidden=False),
         }
 
         return render(request, template_name="budget/category.html", context=context)

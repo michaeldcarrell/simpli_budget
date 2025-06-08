@@ -318,7 +318,7 @@ class Transactions(models.Model):
             'merchant_name': self.merchant_name,
             'iso_currency_code': self.iso_currency_code,
             'date': self.date.date_display,
-            'authorized_date': self.authorized_date.isoformat(),
+            'authorized_date': self.authorized_date.isoformat() if self.authorized_date else None,
             'pending': self.pending,
             'amount': self.amount,
             'website': self.website,

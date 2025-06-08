@@ -13,6 +13,8 @@ class TransactionAPI(APIView):
 
     def post(self, request):
         transaction = Transactions.objects.get(transaction_id=request.data['transaction_id'])
+        if request.user.id != transaction.user.id:
+            return Response(data={'message': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
         transaction.category_id = int(request.data['category_id'])
         transaction.updated_at = dt.now()
         transaction.save()
