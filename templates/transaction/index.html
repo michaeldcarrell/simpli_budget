@@ -1,4 +1,5 @@
 {% extends "_layout.html" %}
+{% load static %}
 {% block title %}{{ title }}{% endblock %}
 {% block body %}
     {% for input in inputs %}
@@ -12,4 +13,7 @@
             {% endfor %}
         </select>
     </div>
+{% endblock %}
+{% block scripts %}
+    <script src="{% static 'transaction/js/transaction.js' %}"></script>
 {% endblock %}

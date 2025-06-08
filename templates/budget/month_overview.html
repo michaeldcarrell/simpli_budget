@@ -6,7 +6,7 @@
         {{ section.category_type.category_type_name }}
         <ul class="list-group">
         {% for category_month in section.categories %}
-            <a class="list-group-item" href="/budget/category/{{ category_month.category.category_id }}">
+            <a class="list-group-item" href="/budget/category/{{ category_month.category.category_id }}?month={{ category_month.month.year_month }}">
                 {{ category_month.category.category_name }}
                 {{ category_month.month_total_display }}
             </a>
