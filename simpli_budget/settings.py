@@ -9,21 +9,22 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+from decouple import config
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-0_biufi=f2v-xyp*n8-=_&ac(9074i+&d(jomr8gfyo^&4atnh"
+SECRET_KEY = config('SECRET_KEY')
+CBA_LAMBDA_URL = 'https://mk5ftlon8l.execute-api.us-east-1.amazonaws.com/v1/plaid'
+CBA_LAMBDA_KEY = config('CBA_LAMBDA_KEY')
+PLAID_CLIENT_ID = '61717ac944fc260012f96bc9'
+PLAID_SECRET = config('PLAID_SECRET')
+CBA_POSTGRES_DB_PASS = config('CBA_POSTGRES_DB_PASS')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = [
     'test-django-6fd04c58ba3a.herokuapp.com',
@@ -35,7 +36,6 @@ ALLOWED_HOSTS = [
 
 
 # Application definition
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -110,14 +110,13 @@ WSGI_APPLICATION = "simpli_budget.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "DATABASE": "simplibudget",
         "NAME": "simplibudget",
         "USER": "mdc_admin",
-        "PASSWORD": "z+:Q_g2*q32sQG4L",
+        "PASSWORD": CBA_POSTGRES_DB_PASS,
         "HOST": "34.55.159.77",
         "POST": "5432",
         #  Use this when utilizing python manage.py inspectdb > models.py
@@ -130,7 +129,6 @@ DATABASES = {
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -149,19 +147,13 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = "en-us"
-
 TIME_ZONE = "UTC"
-
 USE_I18N = True
-
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL = "static/"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
@@ -169,7 +161,6 @@ STATICFILES_DIRS = [
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTHENTICATION_BACKENDS = (
