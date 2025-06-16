@@ -24,15 +24,10 @@ PLAID_SECRET = config('PLAID_SECRET')
 CBA_POSTGRES_DB_PASS = config('CBA_POSTGRES_DB_PASS')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = config('DEBUG', default=True, cast=bool)
+print(DEBUG)
 
-ALLOWED_HOSTS = [
-    'test-django-6fd04c58ba3a.herokuapp.com',
-    'budget.testing-carrell.site',
-    'testing-carrell.site',
-    'localhost',
-    '127.0.0.1',
-]
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -158,6 +153,7 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
