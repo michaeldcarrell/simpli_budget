@@ -4,6 +4,8 @@ from django.db.models import QuerySet
 
 
 def money_as_float(field):
+    if field is None:
+        return None
     val = field.replace("$", "")
     val = val.replace(",", "")
     return float(val)
@@ -119,6 +121,10 @@ class Categories(models.Model):
     def default_monthly_amount(self):
         return money_as_float(self._default_monthly_amount)
 
+    @property
+    def budget_display(self):
+        return money_display(self.default_monthly_amount if self.default_monthly_amount else 0)
+
     def to_dict(self, public: bool = True, include_user: bool = False) -> dict:
         return {
             'category_id': self.category_id,
@@ -134,7 +140,10 @@ class Categories(models.Model):
 
     def monthly_amount(self, year_month: int) -> float:
         monthly_amount = 0
-        transactions = self.transactions_set.filter(date__year_month=year_month)
+        transactions = self.transactions_set.filter(
+            date__year_month=year_month,
+            account__deleted=False,
+        )
         for transaction in transactions:
             monthly_amount += transaction.amount
         if self.category_type.invert_amounts:
@@ -162,7 +171,10 @@ class CategoryMonth:
         self.month = Month(year_month=year_month)
         self.month_total = category.monthly_amount(year_month)
         self.month_total_display = '${:,.2f}'.format(self.month_total)
-        self.transactions = category.transactions_set.filter(date__year_month=year_month)
+        self.transactions = category.transactions_set.filter(
+            date__year_month=year_month,
+            account__deleted=False,
+        ).order_by('-date')
 
 
 class CategoryTypeMonth:
@@ -171,11 +183,13 @@ class CategoryTypeMonth:
         self.category_type = category_type
         self.categories = self.get_month_categories(include_hidden)
 
-    def get_month_categories(self, include_hidden: bool) -> list:
+    def get_month_categories(self, include_hidden: bool) -> list[CategoryMonth]:
         if include_hidden:
             categories = self.category_type.categories_set.all()
         else:
-            categories = self.category_type.categories_set.filter(hidden=False)
+            categories = self.category_type.categories_set.filter(
+                hidden=False
+            )
         return [
             CategoryMonth(
                 category=category,
@@ -195,7 +209,26 @@ class BudgetMonth:
             ) for category_type in category_types
         ]
         self.year_month = year_month
+        self.month = Month(year_month=year_month)
+        net = self.__get_net()
+        self.income = net['income']
+        self.expenses = net['expenses']
 
+    def __get_net(self):
+        income = 0
+        expenses = 0
+        for category_type in self.category_types:
+            expense = not category_type.category_type.invert_amounts
+            for category_month in category_type.categories:
+                for transaction in category_month.transactions:
+                    if expense:
+                        expenses += transaction.amount
+                    else:
+                        income += transaction.amount
+        return {
+            'income': money_display(income, amount_inverted=True),
+            'expenses': money_display(expenses),
+        }
 
 class AccessTokens(models.Model):
     access_token_id = models.AutoField(primary_key=True)
@@ -273,7 +306,7 @@ class Accounts(models.Model):
 
 class Transactions(models.Model):
     transaction_id = models.CharField(primary_key=True, max_length=64)
-    pending_transaction = models.ForeignKey('self', models.DO_NOTHING, blank=True, null=True)
+    pending_transaction_id = models.CharField(max_length=64, blank=True, null=True)
     account = models.ForeignKey(Accounts, models.DO_NOTHING)
     category = models.ForeignKey(Categories, models.DO_NOTHING)
     merchant_entity_id = models.CharField(max_length=64, blank=True, null=True)
@@ -306,10 +339,9 @@ class Transactions(models.Model):
         return self.account.user
 
     def to_dict(self, public: bool = True):
-        pending_transaction = self.pending_transaction.to_dict() if self.pending_transaction else {}
         return_dict = {
             'transaction_id': self.transaction_id,
-            'pending_transaction_id': pending_transaction.get('transaction_id'),
+            'pending_transaction_id': self.pending_transaction_id,
             'account': self.account.to_dict(public=public, include_user=False),
             'category': self.category.to_dict(public=public, include_user=False),
             'merchant_entity_id': self.merchant_entity_id,
@@ -332,3 +364,45 @@ class Transactions(models.Model):
     class Meta:
         managed = False
         db_table = '"plaid"."transactions"'
+
+
+class Tag(models.Model):
+    tag_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=False)
+    name = models.CharField(max_length=32, null=False)
+    deleted = models.BooleanField(default=False, null=False)
+    created_at = models.DateTimeField(auto_now_add=True, null=False)
+    updated_at = models.DateTimeField(auto_now=True, null=False)
+
+    class Meta:
+        managed = False
+        db_table = '"budget"."tag"'
+
+    def to_dict(self):
+        return {
+            'tag_id': self.tag_id,
+            'user': user_to_dict(self.user),
+            'name': self.name,
+            'deleted': self.deleted,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+        }
+
+
+class TransactionTag(models.Model):
+    transaction_tag_id = models.AutoField(primary_key=True)
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE, null=False)
+    transaction = models.ForeignKey(Transactions, on_delete=models.CASCADE, null=False)
+    created_at = models.DateTimeField(auto_now_add=True, null=False)
+
+    class Meta:
+        managed = False
+        db_table = '"budget"."transaction_tag"'
+
+    def to_dict(self):
+        return {
+            'transaction_tag_id': self.transaction_tag_id,
+            'tag': self.tag.to_dict(),
+            'transaction': self.transaction.to_dict(),
+            'created_at': self.created_at.isoformat(),
+        }

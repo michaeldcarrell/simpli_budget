@@ -1,4 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Sum
 from django.shortcuts import render
 from django.views import View
 from simpli_budget.models import CategoryMonth, Categories, CategoryType, UserAttributes, BudgetMonth
@@ -10,10 +11,23 @@ class BudgetCategory(LoginRequiredMixin, View):
         month = request.GET.get("month", current_year_month)
         category = Categories.objects.get(category_id=category_id)
         category_month = CategoryMonth(category=category, year_month=int(month))
+        categories = [
+            category for category in
+            Categories.objects.filter(
+                category_type__user_id=request.user.id,
+                hidden=False
+            )
+        ]
+        categories.append(
+            Categories.objects.filter(
+                category_id=-1
+            ).first()
+        )
+
         context = {
             "title": f"{category.category_name} - {category_month.month.name_short}",
             "category_month": category_month,
-            'categories': Categories.objects.filter(category_type__user_id=request.user.id, hidden=False),
+            'categories': categories,
         }
 
         return render(request, template_name="budget/category.html", context=context)

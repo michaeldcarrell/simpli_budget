@@ -1,14 +1,39 @@
 {% extends "_layout.html" %}
 {% block body %}
+<h2 style="margin: 10px;">{{ budget_month.month.name }}</h2>
+<div class="row" style="margin: 10px 0;">
+    <div class="col">
+        <label for="income">Income</label>
+        <input type="text" id="income" class="form-control" value="{{ budget_month.income }}" disabled>
+    </div>
+    <div class="col">
+        <label for="expenses">Expenses</label>
+        <input type="text" id="expenses" class="form-control" value="{{ budget_month.expenses }}" disabled>
+    </div>
+</div>
 <ul class="list-group">
+    <li class="list-group-item">
+        <div class="row">
+            <div class="col"></div>
+            <div class="col">Amount</div>
+            <div class="col">Budgeted</div>
+        </div>
+    </li>
 {% for section in budget_month.category_types %}
     <li class="list-group-item">
         {{ section.category_type.category_type_name }}
         <ul class="list-group">
         {% for category_month in section.categories %}
-            <a class="list-group-item" href="/budget/category/{{ category_month.category.category_id }}?month={{ category_month.month.year_month }}">
-                {{ category_month.category.category_name }}
+            <a class="row list-group-item" style="display: flex!important;" href="/budget/category/{{ category_month.category.category_id }}?month={{ category_month.month.year_month }}">
+                <div class="col">
+                    {{ category_month.category.category_name }}
+                </div>
+            <div class="col">
                 {{ category_month.month_total_display }}
+            </div>
+            <div class="col">
+                {{ category_month.category.budget_display }}
+            </div>
             </a>
         {% endfor %}
         </ul>

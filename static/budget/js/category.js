@@ -7,7 +7,7 @@ let controller = function() {
             categorySelector.addEventListener('change', function() {
                 let transaction_id = categorySelector.getAttribute('transaction_id');
                 let transaction = new Transaction(transaction_id);
-                transaction.setCategory(categorySelector.value, true);
+                transaction.setCategory(categorySelector.value, false);
             })
         })
     }();

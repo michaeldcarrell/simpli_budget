@@ -5,28 +5,30 @@
     <link href="{% static '/budget/css/category.css' %}" rel="stylesheet">
 {% endblock %}
 {% block body %}
+<div class="container">
     <h3 style="margin-top: 10px;">{{ category_month.category.category_name }}</h3>
-    {% for transaction in category_month.transactions %}
-        <div class="row row-card" style="margin-top: 5px;">
-            <div class="col-8">
-                <a href="/transaction/{{ transaction.transaction_id }}"
-                   style="width: 100%; text-decoration: none; cursor: pointer; color: black;">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ transaction.name }}</h5>
-                        <h6 class="card-subtitle mb-2 text-body-secondary">{{ transaction.date.date }}</h6>
-                        <h5 class="card-text">{{ transaction.display_amount }}</h5>
-                    </div>
-                </a>
-            </div>
-            <div class="col-4" style="margin: auto;">
-                <select class="transaction-category-selector form-control" transaction_id="{{ transaction.transaction_id }}">
-                {% for category in categories %}
-                    <option value="{{ category.category_id }}"{% if category.category_id == transaction.category_id %} selected{% endif %}>{{ category.category_name }}</option>
-                {% endfor %}
-                </select>
-            </div>
+{% for transaction in category_month.transactions %}
+    <div class="row row-card" style="margin-top: 5px;">
+        <div class="col-8">
+            <a href="/transaction/{{ transaction.transaction_id }}"
+               style="width: 100%; text-decoration: none; cursor: pointer; color: black;">
+                <div class="card-body">
+                    <h5 class="card-title">{{ transaction.name }}</h5>
+                    <h6 class="card-subtitle mb-2 text-body-secondary">{{ transaction.date.date }}</h6>
+                    <h5 class="card-text">{{ transaction.display_amount }}</h5>
+                </div>
+            </a>
         </div>
-    {% endfor %}
+        <div class="col-4" style="margin: auto;">
+            <select class="transaction-category-selector form-control" transaction_id="{{ transaction.transaction_id }}">
+            {% for category in categories %}
+                <option value="{{ category.category_id }}"{% if category.category_id == transaction.category_id %} selected{% endif %}>{{ category.category_name }}</option>
+            {% endfor %}
+            </select>
+        </div>
+    </div>
+{% endfor %}
+</div>
 {% endblock %}
 {% block scripts %}
     <script src="{% static 'transaction/js/classes/Transaction.js' %}"></script>
