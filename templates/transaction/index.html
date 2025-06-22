@@ -2,16 +2,35 @@
 {% load static %}
 {% block title %}{{ title }}{% endblock %}
 {% block body %}
+    <div class="container">
     {% for input in inputs %}
         {{ input.get_html|safe }}
     {% endfor %}
     <div class="row">
+        <label for="tags">Tags</label>
+        <select id="tags" class="form-control selectpicker" title="No tags" multiple>
+        {% for tag in transaction_tags %}
+            <option
+                value="{{ tag.tag_id }}"
+                data-content="<span class='badge text-bg-primary'>{{ tag.name }}</span>"
+                {% if tag.transaction_tag_id is not None %}selected{% endif %}
+            >
+                {{ tag.name }}
+            </option>
+        {% endfor %}
+        </select>
+    </div>
+    <div class="row">
         <label for="category">Category</label>
-        <select id="category" class="form-control">
+        <select
+            id="category"
+            class="form-control selectpicker"
+        >
             {% for category in categories %}
                 <option value="{{ category.category_id }}" {% if category.category_id == transaction.category_id %}selected{% endif %}>{{ category.category_name }}</option>
             {% endfor %}
         </select>
+    </div>
     </div>
 {% endblock %}
 {% block scripts %}
