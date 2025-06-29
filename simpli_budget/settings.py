@@ -25,7 +25,6 @@ CBA_POSTGRES_DB_PASS = config('CBA_POSTGRES_DB_PASS')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
-print(DEBUG)
 
 ALLOWED_HOSTS = ['*']
 

@@ -143,6 +143,7 @@ class Categories(models.Model):
         transactions = self.transactions_set.filter(
             date__year_month=year_month,
             account__deleted=False,
+            deleted=False,
         )
         for transaction in transactions:
             monthly_amount += transaction.amount
@@ -174,6 +175,7 @@ class CategoryMonth:
         self.transactions = category.transactions_set.filter(
             date__year_month=year_month,
             account__deleted=False,
+            deleted=False,
         ).order_by('-date')
 
 
@@ -320,6 +322,7 @@ class Transactions(models.Model):
     _amount = models.TextField(blank=True, null=True, db_column="amount")
     website = models.CharField(max_length=128, blank=True, null=True)
     logo_url = models.CharField(max_length=128, blank=True, null=True)
+    deleted = models.BooleanField(blank=False, null=True)
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
 
