@@ -2,7 +2,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Sum
 from django.shortcuts import render
 from django.views import View
-from simpli_budget.models import CategoryMonth, Categories, CategoryType, UserAttributes, BudgetMonth
+from simpli_budget.models import CategoryMonth, Categories, CategoryType, UserAttributes, BudgetMonth, Month
 from datetime import datetime as dt
 
 class BudgetCategory(LoginRequiredMixin, View):
@@ -45,5 +45,6 @@ class MonthBudget(LoginRequiredMixin, View):
                 year_month=year_month,
                 include_hidden=attributes.show_hidden
             ),
+            'svg_button_size': 32,
         }
         return render(request, template_name="budget/month_overview.html", context=context)
