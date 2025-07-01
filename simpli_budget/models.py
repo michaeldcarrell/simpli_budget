@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
 from django.db.models import QuerySet
+from datetime import datetime as dt, timedelta
+from dateutil.relativedelta import relativedelta
 
 
 def money_as_float(field):
@@ -164,6 +166,21 @@ class Month:
         self.end_of_month_date = Date.objects.filter(year_month=year_month).order_by('date').last()
         self.name = f"{self.start_of_month_date.month_name}, {self.start_of_month_date.year}"
         self.name_short = f"{self.start_of_month_date.month_name_short}, {self.start_of_month_date.year}"
+        self.__start_dt = dt(year=self.start_of_month_date.year, month=self.start_of_month_date.month_number, day=1)
+        self.__next_month_dt = self.__start_dt + relativedelta(months=1)
+        self.__last_month_dt = self.__start_dt - relativedelta(months=1)
+
+    @property
+    def next_month(self):
+        next_month_year = self.__next_month_dt.year
+        next_month_month = str(self.__next_month_dt.month).zfill(2)
+        return Month(year_month=int(f'{next_month_year}{next_month_month}'))
+
+    @property
+    def last_month(self):
+        last_month_year = self.__last_month_dt.year
+        last_month_month = str(self.__last_month_dt.month).zfill(2)
+        return Month(year_month=int(f'{last_month_year}{last_month_month}'))
 
 
 class CategoryMonth:
