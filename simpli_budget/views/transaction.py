@@ -16,8 +16,17 @@ class CurrentTransactionTag(NamedTuple):
 class Transaction(LoginRequiredMixin, View):
     def get(self, request, transaction_id: str):
         transaction = Transactions.objects.get(transaction_id=transaction_id)
-        categories = Categories.objects.filter(category_type__user_id=request.user.id)
-        tags = Tag.objects.filter(user_id=request.user.id)
+        if not transaction.user_has_access(request.user):
+            return render(
+                request,
+                template_name="404.html",
+                context={
+                    "message": "Transaction not found"
+                }
+            )
+        group_id = transaction.category.category_type.group_id
+        categories = Categories.objects.filter(category_type__group_id=group_id)
+        tags = Tag.objects.filter(group_id=group_id)
         current_transaction_tags = []
         for tag in tags:
             searched_tag = transaction.transactiontag_set.filter(tag_id=tag.tag_id)

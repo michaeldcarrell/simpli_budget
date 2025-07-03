@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.db.models import QuerySet
-from datetime import datetime as dt, timedelta
+from datetime import datetime as dt
 from dateutil.relativedelta import relativedelta
 
 
@@ -24,6 +24,47 @@ def user_to_dict(user: settings.AUTH_USER_MODEL) -> dict:
         'last_name': user.last_name,
         'date_joined': user.date_joined.isoformat(),
     }
+
+
+class Group(models.Model):
+    group_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=32, null=False)
+    created_at = models.DateTimeField(auto_now_add=True, null=False)
+    updated_at = models.DateTimeField(auto_now=True, null=False)
+
+    class Meta:
+        managed = False
+        db_table = '"budget"."group"'
+
+    def to_dict(self):
+        return {
+            'group_id': self.group_id,
+            'name': self.name,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+        }
+
+    def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
+        return GroupUser.objects.filter(group=self, user=user).exists()
+
+class GroupUser(models.Model):
+    group_user_id = models.AutoField(primary_key=True)
+    group = models.ForeignKey(Group, on_delete=models.DO_NOTHING, null=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING, null=False)
+    user_default_group = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True, null=False)
+
+    class Meta:
+        managed = False
+        db_table = '"budget"."group_user"'
+
+    def to_dict(self):
+        return {
+            'group_user_id': self.group_user_id,
+            'group': self.group.to_dict(),
+            'user': user_to_dict(self.user),
+            'created_at': self.created_at.isoformat(),
+        }
 
 
 class UserAttributes(models.Model):
@@ -79,7 +120,7 @@ class Date(models.Model):
 
 class CategoryType(models.Model):
     category_type_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, blank=False, null=False)
     category_type_name = models.CharField(max_length=64)
     invert_amounts = models.BooleanField(blank=True, null=True)
     hidden = models.BooleanField(blank=True, null=True)
@@ -87,10 +128,10 @@ class CategoryType(models.Model):
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
 
-    def to_dict(self, public: bool = True, include_user: bool = False) -> dict:
+    def to_dict(self) -> dict:
         return_dict = {
             'category_type_id': self.category_type_id,
-            'owner': user_to_dict(self.user),
+            'group': self.group.to_dict(),
             'category_type_name': self.category_type_name,
             'invert_amounts': self.invert_amounts,
             'hidden': self.hidden,
@@ -98,14 +139,15 @@ class CategoryType(models.Model):
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
         }
-        if not include_user:
-            del return_dict['owner']
         return return_dict
 
     class Meta:
         managed = False
         db_table = '"budget"."category_type"'
-        unique_together = (('user_id', 'category_type_name'),)
+        unique_together = (('group_id', 'category_type_name'),)
+
+    def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
+        return GroupUser.objects.filter(group=self.group, user=user).exists()
 
 
 class Categories(models.Model):
@@ -127,10 +169,10 @@ class Categories(models.Model):
     def budget_display(self):
         return money_display(self.default_monthly_amount if self.default_monthly_amount else 0)
 
-    def to_dict(self, public: bool = True, include_user: bool = False) -> dict:
+    def to_dict(self) -> dict:
         return {
             'category_id': self.category_id,
-            'category_type': self.category_type.to_dict(public=public, include_user=include_user),
+            'category_type': self.category_type.to_dict(),
             'category_name': self.category_name,
             'default_monthly_amount': self.default_monthly_amount,
             'sort_index': self.sort_index,
@@ -157,6 +199,9 @@ class Categories(models.Model):
         managed = False
         db_table = '"budget"."categories"'
         unique_together = (('category_type', 'category_name'),)
+
+    def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
+        return GroupUser.objects.filter(group_id=self.category_type.group_id, user=user).exists()
 
 
 class Month:
@@ -251,7 +296,7 @@ class BudgetMonth:
 
 class AccessTokens(models.Model):
     access_token_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, blank=False, null=False)
     access_token = models.CharField(max_length=64)
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
@@ -261,7 +306,7 @@ class AccessTokens(models.Model):
     def to_dict(self, public: bool = True):
         return_dict = {
             "access_token_id": self.access_token_id,
-            "user": user_to_dict(self.user),
+            "group": self.group.to_dict(),
             "access_token": self.access_token,
             "institution_id": self.institution_id,
             "created_at": self.created_at.isoformat(),
@@ -276,11 +321,14 @@ class AccessTokens(models.Model):
         managed = False
         db_table = '"plaid"."access_tokens"'
 
+    def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
+        return GroupUser.objects.filter(group=self.group, user=user).exists()
+
 
 class Accounts(models.Model):
     account_id = models.CharField(primary_key=True, max_length=64)
     access_token = models.ForeignKey(AccessTokens, models.DO_NOTHING, blank=True, null=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, blank=False, null=False)
     type = models.CharField(max_length=64)
     sub_type = models.CharField(max_length=128, blank=True, null=True)
     name = models.CharField(max_length=128)
@@ -296,11 +344,11 @@ class Accounts(models.Model):
     def balance(self):
         return money_as_float(self._balance)
 
-    def to_dict(self, public: bool = True, include_user: bool = False):
+    def to_dict(self, public: bool = True):
         return_dict = {
             'account_id': self.account_id,
             'access_token': self.access_token.to_dict(public=public),
-            'owner': user_to_dict(self.user),
+            'group': self.group.to_dict(),
             'type': self.type,
             'sub_type': self.sub_type,
             'name': self.name,
@@ -312,8 +360,6 @@ class Accounts(models.Model):
             'updated_at': self.updated_at.isoformat(),
             'deleted': self.deleted,
         }
-        if not include_user:
-            del return_dict['owner']
         if public:
             del return_dict['access_token']
         return return_dict
@@ -321,6 +367,9 @@ class Accounts(models.Model):
     class Meta:
         managed = False
         db_table = '"plaid"."accounts"'
+
+    def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
+        return GroupUser.objects.filter(group=self.group, user=user).exists()
 
 
 class Transactions(models.Model):
@@ -355,15 +404,15 @@ class Transactions(models.Model):
         )
 
     @property
-    def user(self):
-        return self.account.user
+    def group(self):
+        return self.account.group
 
     def to_dict(self, public: bool = True):
         return_dict = {
             'transaction_id': self.transaction_id,
             'pending_transaction_id': self.pending_transaction_id,
-            'account': self.account.to_dict(public=public, include_user=False),
-            'category': self.category.to_dict(public=public, include_user=False),
+            'account': self.account.to_dict(public=public),
+            'category': self.category.to_dict(),
             'merchant_entity_id': self.merchant_entity_id,
             'transaction_type': self.transaction_type,
             'name': self.name,
@@ -375,7 +424,7 @@ class Transactions(models.Model):
             'amount': self.amount,
             'website': self.website,
             'logo_url': self.logo_url,
-            'owner': user_to_dict(self.user),
+            'group': self.group.to_dict(),
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
         }
@@ -385,10 +434,13 @@ class Transactions(models.Model):
         managed = False
         db_table = '"plaid"."transactions"'
 
+    def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
+        return GroupUser.objects.filter(group=self.account.group, user=user).exists()
+
 
 class Tag(models.Model):
     tag_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=False)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, null=False)
     name = models.CharField(max_length=32, null=False)
     deleted = models.BooleanField(default=False, null=False)
     created_at = models.DateTimeField(auto_now_add=True, null=False)
@@ -401,12 +453,15 @@ class Tag(models.Model):
     def to_dict(self):
         return {
             'tag_id': self.tag_id,
-            'user': user_to_dict(self.user),
+            'group': self.group.to_dict(),
             'name': self.name,
             'deleted': self.deleted,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
         }
+
+    def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
+        return GroupUser.objects.filter(group=self.group, user=user).exists()
 
 
 class TransactionTag(models.Model):
