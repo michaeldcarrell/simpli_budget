@@ -1,5 +1,4 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Sum
 from django.shortcuts import render
 from django.views import View
 from simpli_budget.models import CategoryMonth, Categories, CategoryType, UserAttributes, BudgetMonth, Month, GroupUser

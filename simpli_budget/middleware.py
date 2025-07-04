@@ -1,0 +1,17 @@
+from simpli_budget.models import UserAttributes
+
+
+class SetUserAttributeDefaults:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        user_attributes = UserAttributes.objects.filter(
+            user=request.user
+        ).first()
+        if user_attributes is None:
+            UserAttributes.objects.create(
+                user=request.user,
+                show_hidden=False
+            )
+        return self.get_response(request)
