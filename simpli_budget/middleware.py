@@ -6,10 +6,9 @@ class SetUserAttributeDefaults:
         self.get_response = get_response
 
     def __call__(self, request):
-        user_attributes = UserAttributes.objects.filter(
+        if not UserAttributes.objects.filter(
             user=request.user
-        ).first()
-        if user_attributes is None:
+        ).exists():
             UserAttributes.objects.create(
                 user=request.user,
                 show_hidden=False
