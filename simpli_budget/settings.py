@@ -79,6 +79,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "simpli_budget.middleware.SetUserAttributeDefaults",
 ]
 
 ROOT_URLCONF = "simpli_budget.urls"
