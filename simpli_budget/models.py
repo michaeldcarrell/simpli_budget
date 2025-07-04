@@ -69,9 +69,9 @@ class GroupUser(models.Model):
 
 class UserAttributes(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, models.DO_NOTHING, primary_key=True)
-    show_hidden = models.BooleanField()
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
+    show_hidden = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=dt.now)
+    updated_at = models.DateTimeField(default=dt.now)
 
     class Meta:
         managed = False
