@@ -1,0 +1,37 @@
+{% extends "_layout.html" %}
+{% load static %}
+{% block title %}My Accounts - Simplibudget{% endblock %}
+{% block scripts %}
+    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+    <script src="{% static "accounts/classes/Account.js" %}"></script>
+    <script src="{% static "accounts/classes/AccessToken.js" %}"></script>
+    <script src="{% static "accounts/account.js" %}"></script>
+{% endblock %}
+{% block body %}
+    <div class="container" style="margin-top: 20px;">
+        <div class="row {% if not account.out_of_date %}hidden{% endif %}" style="margin-top: 10px;">
+            <button
+                    id="re-auth-btn"
+                    type="button"
+                    class="btn btn-warning"
+                    account-id="{{ account.account_id }}"
+                    access-token-id="{{ account.access_token_id }}"
+                    link-token="{{ link_token }}"
+            >
+                Re-Authenticate
+            </button>
+        </div>
+        <div class="row">
+            <label for="official-name">Official Name</label>
+            <input type="text" id="official-name" class="form-control" value="{{ account.official_name }}" disabled>
+        </div>
+        <div class="row">
+            <label for="name">Name</label>
+            <input type="text" id="name" class="form-control" value="{{ account.name }}" disabled>
+        </div>
+        <div class="row">
+            <label for="given-name">Given Name</label>
+            <input type="text" id="given-name" class="form-control" {% if account.give_name is not None %}value="{{ account.given_name }}" {% else %}placeholder="Your Name" {% endif %}>
+        </div>
+    </div>
+{% endblock %}

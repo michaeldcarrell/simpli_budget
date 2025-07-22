@@ -1,23 +1,20 @@
-import os
+import json
+import requests
+from django.conf import settings
+
 
 class Plaid:
-    def __init__(self, access_token: str = None, public_token: str = None, last_load_date: str = None,
-                 user_id: str = None):
-        self.access_token = access_token
-        self.public_token = public_token
+    def __init__(self):
         self.base_url = 'https://production.plaid.com'
-        self.__client_id = os.environ['PLAID_CLIENT_ID']
-        self.__secret = os.environ['PLAID_SECRET']
+        self.__client_id = settings.PLAID_CLIENT_ID
+        self.__secret = settings.PLAID_SECRET
         self.headers = {
             'Content-Type': 'application/json'
         }
         self.link_token = None
-        self.last_load_date = last_load_date
-        self.user_id = user_id
-        self.__server = 'cba.database.windows.net'
-        self.__database = 'cba'
+        self.access_token = None
 
-    def get_link_token(self, access_token: str):
+    def get_link_token(self, access_token: str = None):
         url = f'{self.base_url}/link/token/create'
         params = {
             'client_id': self.__client_id,
@@ -49,6 +46,27 @@ class Plaid:
                     'token': self.link_token,
                     'token_type': 'link'
                 }
+        else:
+            return {
+                'success': False,
+                'code': res.status_code,
+                'response_text': res.text
+            }
+
+    def public_token_exchange(self, public_token: str):
+        url = f'{self.base_url}/item/public_token/exchange'
+        params = {
+            'client_id': self.__client_id,
+            'secret': self.__secret,
+            'public_token': public_token
+        }
+        res = requests.request('POST', url, data=json.dumps(params), headers=self.headers)
+        if res.status_code == 200:
+            self.access_token = res.json()['access_token']
+            return {
+                'success': True,
+                'token': self.access_token
+            }
         else:
             return {
                 'success': False,

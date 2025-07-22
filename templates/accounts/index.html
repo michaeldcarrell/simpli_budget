@@ -4,3 +4,19 @@
 {% block scripts %}
     <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
 {% endblock %}
+
+{% block body %}
+<ul class="list-group" style="margin-top: 20px;">
+{% for account in accounts %}
+    <a class="list-group-item" href="accounts/{{ account.account_id }}">
+        <div class="row">
+            <div class="col">{{ account.display_name }}</div>
+            <div class="col">{{ account.display_balance }}</div>
+        </div>
+        {% if account.out_of_date %}
+            <span class="badge text-bg-danger rounded-pill" style="position: absolute; top: 5px; right: 5px;">Re-Auth</span>
+        {% endif %}
+    </a>
+{% endfor %}
+</ul>
+{% endblock %}

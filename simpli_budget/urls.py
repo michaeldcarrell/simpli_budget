@@ -21,6 +21,8 @@ urlpatterns = [
         views.BudgetCategory.as_view(),
         name="budget",
     ),
+    path("accounts", views.AccountsView.as_view(), name="accounts"),
+    path("accounts/<str:account_id>", views.Account.as_view(), name="account"),
     path("logout", views.Logout.as_view(), name="logout"),
 ]
 

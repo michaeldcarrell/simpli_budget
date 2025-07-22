@@ -1,8 +1,9 @@
 from django.db import models
 from django.conf import settings
 from django.db.models import QuerySet
-from datetime import datetime as dt
+from datetime import datetime as dt, timedelta
 from dateutil.relativedelta import relativedelta
+from pytz import UTC
 
 
 def money_as_float(field):
@@ -370,6 +371,23 @@ class Accounts(models.Model):
 
     def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
         return GroupUser.objects.filter(group=self.group, user=user).exists()
+
+    @property
+    def display_name(self):
+        if self.given_name:
+            return self.given_name
+        elif self.official_name:
+            return self.official_name
+        else:
+            return self.name
+
+    @property
+    def display_balance(self):
+        return money_display(field=self.balance)
+
+    @property
+    def out_of_date(self):
+        return (dt.now(tz=UTC) - self.updated_at) > timedelta(days=3)
 
 
 class Transactions(models.Model):
