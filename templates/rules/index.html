@@ -1,0 +1,31 @@
+{% extends "_layout.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+{% block body %}
+<div class="container" style="margin-top: 20px;">
+    <div class="row" style="margin-bottom: 20px;">
+        <div class="col-4">
+            <input type="text" class="form-control" id="rule-set-name" placeholder="Rule Name" style="width: 100%;">
+        </div>
+        <div class="col-4">
+            <select id="default-category-name" class="form-control selectpicker" title="Category">
+                {% for category in categories %}
+                    <option value="{{ category.category_id }}">{{ category.category_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-4">
+            <button class="btn btn-success form-control" id="new-rule">New Rule</button>
+        </div>
+    </div>
+    <ul class="list-group">
+    {% for rule_set in rule_sets %}
+        <a class="list-group-item" href="/rules/{{ rule_set.set_id }}">{{ rule_set.name }}</a>
+    {% endfor %}
+    </ul>
+</div>
+{% endblock %}
+{% block scripts %}
+    <script src="{% static "rules/js/classes/RuleSet.js" %}"></script>
+    <script src="{% static "rules/js/index.js" %}"></script>
+{% endblock %}
