@@ -499,3 +499,82 @@ class TransactionTag(models.Model):
             'transaction': self.transaction.to_dict(),
             'created_at': self.created_at.isoformat(),
         }
+
+
+class RuleSet(models.Model):
+    set_id = models.AutoField(primary_key=True)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, null=False)
+    name = models.CharField(max_length=32, null=False)
+    default_category = models.ForeignKey(Categories, on_delete=models.CASCADE, null=False)
+    active = models.BooleanField(default=True, null=False)
+    created_at = models.DateTimeField(auto_now_add=True, null=False)
+    updated_at = models.DateTimeField(auto_now=True, null=False)
+
+    class Meta:
+        managed = False
+        db_table = '"rule"."set"'
+
+    def to_dict(self):
+        return {
+            'set_id': self.set_id,
+            'group': self.group.to_dict(),
+            'name': self.name,
+            'default_category': self.default_category.to_dict(),
+            'active': self.active,
+            'created_at': self.created_at.isoformat(),
+        }
+
+    def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
+        return GroupUser.objects.filter(group=self.group, user=user).exists()
+
+
+class RuleMatchType(models.Model):
+    match_type_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=32, null=False)
+    display_name = models.CharField(max_length=32, null=False)
+    value_type = models.CharField(max_length=16, null=False)
+    created_at = models.DateTimeField(auto_now_add=True, null=False)
+    updated_at = models.DateTimeField(auto_now=True, null=False)
+
+    class Meta:
+        managed = False
+        db_table = '"rule"."match_type"'
+
+    def to_dict(self):
+        return {
+            'match_type_id': self.match_type_id,
+            'name': self.name,
+            'display_name': self.display_name,
+            'value_type': self.value_type,
+            'created_at': self.created_at.isoformat(),
+        }
+
+
+class Rule(models.Model):
+    rule_id = models.AutoField(primary_key=True)
+    set = models.ForeignKey(RuleSet, on_delete=models.CASCADE, null=False)
+    match_string = models.TextField(null=True)
+    match_number = models.FloatField(null=True)
+    match_type = models.ForeignKey(RuleMatchType, on_delete=models.CASCADE, null=False)
+    active = models.BooleanField(default=True, null=False)
+    created_at = models.DateTimeField(auto_now_add=True, null=False)
+    updated_at = models.DateTimeField(auto_now=True, null=False)
+
+    class Meta:
+        managed = False
+        db_table = '"rule"."rule"'
+
+    def to_dict(self):
+        return {
+            'rule_id': self.rule_id,
+            'set': self.set.to_dict(),
+            'match_string': self.match_string,
+            'match_number': self.match_number,
+            'match_type': self.match_type.to_dict(),
+            'active': self.active,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+        }
+
+    def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
+        return GroupUser.objects.filter(group=self.set.group, user=user).exists()

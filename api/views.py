@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication
 from datetime import datetime as dt
-from simpli_budget.models import Transactions, Tag, AccessTokens, Accounts
+from simpli_budget.models import Transactions, Tag, AccessTokens, Accounts, Rule, GroupUser, RuleSet
 from helpers.plaid import Plaid
 
 
@@ -80,3 +80,55 @@ class PlaidPublicTokenExchangeAPI(APIView):
         if not access_token.user_has_access(request.user):
             return Response(data={'message': 'Access token not found'}, status=status.HTTP_404_NOT_FOUND)
         return Response(data=access_token.to_dict(), status=status.HTTP_200_OK)
+
+
+class RuleSetAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        rule_set_name = request.data['name']
+        category_id = request.data['category_id']
+        user_default_group = GroupUser.objects.filter(
+            user_id=request.user.id,
+            user_default_group=True
+        ).first()
+        group_id = request.data.get("group_id", user_default_group.group_id)
+        rule_set = RuleSet.objects.create(
+            name=rule_set_name,
+            group_id=group_id,
+            default_category_id=category_id
+        )
+        rule_set.save()
+        return Response(data=rule_set.to_dict(), status=status.HTTP_201_CREATED)
+
+    def put(self, request, rule_set_id: int):
+        rule_set = RuleSet.objects.get(set_id=rule_set_id)
+        if not rule_set.user_has_access(request.user):
+            return Response(data={'message': 'Rule set not found'}, status=status.HTTP_404_NOT_FOUND)
+        rule_set.default_category_id = request.data['category_id']
+        rule_set.save()
+        return Response(data=rule_set.to_dict(), status=status.HTTP_200_OK)
+
+
+class RuleAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, rule_set_id: int):
+        rule_set = RuleSet.objects.get(set_id=rule_set_id)
+        if not rule_set.user_has_access(request.user):
+            return Response(data={'message': 'Rule set not found'}, status=status.HTTP_404_NOT_FOUND)
+        rule_match_type_id = request.data['match_type_id']
+        match_string = request.data['match_string']
+        match_number = request.data['match_number']
+        rule = Rule.objects.create(
+            set_id=rule_set_id,
+            match_type_id=rule_match_type_id,
+            match_string=match_string,
+            match_number=match_number,
+        )
+        rule.save()
+        return Response(data=rule.to_dict(), status=status.HTTP_201_CREATED)
+
+

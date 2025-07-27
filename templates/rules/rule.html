@@ -1,0 +1,97 @@
+{% extends "_layout.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+{% block styles %}
+    <link href="{% static "rules/css/rule.css" %}" rel="stylesheet">
+{% endblock %}
+{% block body %}
+<div class="modal" tabindex="-1" id="new-check-modal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add a New Check</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+            <label for="match-type">Type of Check</label>
+            <select id="match-type" class="form-control selectpicker" title="Select a type">
+                {% for match_type in match_types %}
+                    <option
+                            value="{{ match_type.match_type_id }}"
+                            data-value-type="{{ match_type.value_type }}"
+                    >
+                        {{ match_type.display_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+          <div class="row">
+              <label for="new-check-value">Check Value</label>
+              <input type="text" id="new-check-value" class="form-control">
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button
+                type="button"
+                class="btn btn-success form-control"
+                id="add-check"
+        >
+            Add Check
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="container" style="margin-top: 20px;">
+    <div class="row">
+        <label for="name">Rule</label>
+        <input type="text" id="name" class="form-control" value="{{ rule_set.name }}" disabled>
+    </div>
+    <div class="row">
+        <label for="category">Category</label>
+        <select id="category" class="form-control selectpicker" title="Category">
+            {% for category in categories %}
+                <option
+                        value="{{ category.category_id }}"
+                        {% if category.category_id == rule_set.default_category_id %}
+                            selected
+                        {% endif %}
+                >
+                    {{ category.category_name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="row" style="margin: 10px 0;">
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#new-check-modal">
+          Add New Check
+        </button>
+    </div>
+    <div class="row">
+        <label for="checks">Checks</label>
+        <ul class="list-group">
+        {% for rule in rules %}
+            <li class="list-group-item">
+                <div class="row">
+                    <div class="col">
+                        <label for="value-{{ rule.rule_id }}">{{ rule.match_type.display_name }}</label>
+                        <input
+                                type="{% if rule.match_number %}number{% else %}text{% endif %}"
+                                id="value-{{ rule.rule_id }}"
+                                class="form-control"
+                                value="{% if rule.match_number %}{{ rule.match_number }}{% else %}{{ rule.match_string }}{% endif %}"
+                        >
+                    </div>
+                </div>
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+    <script src="{% static "rules/js/classes/Rule.js" %}"></script>
+    <script src="{% static "rules/js/classes/RuleSet.js" %}"></script>
+    <script src="{% static "rules/js/rule.js" %}"></script>
+{% endblock %}
