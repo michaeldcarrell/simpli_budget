@@ -76,6 +76,7 @@ class PlaidPublicTokenExchangeAPI(APIView):
         if exchange_response['success']:
             token = exchange_response['token']
             access_token.access_token = token
+            access_token.updated_at = dt.now()
             access_token.save()
         if not access_token.user_has_access(request.user):
             return Response(data={'message': 'Access token not found'}, status=status.HTTP_404_NOT_FOUND)
