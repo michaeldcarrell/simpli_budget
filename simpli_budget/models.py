@@ -387,7 +387,7 @@ class Accounts(models.Model):
 
     @property
     def out_of_date(self):
-        return (dt.now(tz=UTC) - self.updated_at) > timedelta(days=3)
+        return (dt.now(tz=UTC) - self.updated_at) > timedelta(hours=36)
 
 
 class Transactions(models.Model):
