@@ -387,7 +387,9 @@ class Accounts(models.Model):
 
     @property
     def out_of_date(self):
-        return (dt.now(tz=UTC) - self.updated_at) > timedelta(hours=36)
+        account_stale = (dt.now(tz=UTC) - self.updated_at) > timedelta(hours=36)
+        new_token = (dt.now(tz=UTC) - self.access_token.updated_at) < timedelta(hours=2)
+        return account_stale and not new_token
 
 
 class Transactions(models.Model):
