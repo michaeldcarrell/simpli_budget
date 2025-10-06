@@ -14,6 +14,8 @@ def money_as_float(field):
     return float(val)
 
 def money_display(field, amount_inverted: bool = False):
+    if type(field) is str:
+        return field
     value = -1 * field if amount_inverted else field
     return f"${value:,.2f}"
 
@@ -155,7 +157,7 @@ class Categories(models.Model):
     category_id = models.AutoField(primary_key=True)
     category_type = models.ForeignKey(CategoryType, models.DO_NOTHING)
     category_name = models.CharField(max_length=128)
-    _default_monthly_amount = models.TextField(blank=True, null=True, db_column='default_monthly_amount')  # This field type is a guess.
+    _default_monthly_amount = models.TextField(blank=True, null=True, db_column='default_monthly_amount')
     sort_index = models.IntegerField()
     hidden = models.BooleanField()
     deleted = models.BooleanField()
@@ -229,17 +231,67 @@ class Month:
         return Month(year_month=int(f'{last_month_year}{last_month_month}'))
 
 
-class CategoryMonth:
-    def __init__(self, category: Categories, year_month: int):
-        self.category = category
-        self.month = Month(year_month=year_month)
-        self.month_total = category.monthly_amount(year_month)
-        self.month_total_display = '${:,.2f}'.format(self.month_total)
-        self.transactions = category.transactions_set.filter(
-            date__year_month=year_month,
+class CategoryMonth(models.Model):
+    category_month_id = models.AutoField(primary_key=True)
+    category = models.ForeignKey(Categories, on_delete=models.CASCADE)
+    year_month = models.IntegerField(null=False)
+    amount = models.TextField() # This is intentionally left as nullable, so we can still use CategoryMonth in python while it is not in the database
+    created_at = models.DateTimeField(null=False, auto_now_add=True)
+    updated_at = models.DateTimeField(null=False, auto_now=True)
+
+    @property
+    def transactions(self):
+        return self.category.transactions_set.filter(
+            date__year_month=self.year_month,
             account__deleted=False,
             deleted=False,
         ).order_by('-date')
+
+    @property
+    def month(self):
+        return Month(year_month=self.year_month)
+
+    @property
+    def month_total(self):
+        return self.category.monthly_amount(self.year_month)
+
+    @property
+    def month_total_display(self):
+        return money_display(self.month_total)
+
+    @property
+    def display_amount(self):
+        amount = 0
+        if self.amount:
+            amount = self.amount
+        elif self.category.default_monthly_amount:
+            amount = self.category.default_monthly_amount
+        return money_display(field=amount)
+
+    def get(self):
+        record = CategoryMonth.objects.filter(
+            category_id=self.category_id,
+            year_month=self.year_month,
+        ).first()
+        if record is None:
+            record = self
+            record.amount = self.category.default_monthly_amount
+        return record
+
+    def to_dict(self) -> dict:
+        return {
+            'category_month_id': self.category_month_id,
+            'category': self.category.to_dict(),
+            'year_month': self.year_month,
+            'amount': money_as_float(self.amount),
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+        }
+
+    class Meta:
+        managed = False
+        db_table = '"budget"."category_month"'
+        unique_together = (('category', 'year_month'),)
 
 
 class CategoryTypeMonth:
@@ -259,20 +311,23 @@ class CategoryTypeMonth:
             CategoryMonth(
                 category=category,
                 year_month=self.month.year_month
-            ) for category in categories
+            ).get() for category in categories
         ]
 
 class BudgetMonth:
     def __init__(self, category_types: QuerySet, year_month: int, include_hidden: bool = False):
         if not include_hidden:
             category_types = category_types.filter(hidden=False)
-        self.category_types = [
-            CategoryTypeMonth(
+        self.category_types = []
+        for category_type in category_types:
+            category_type_month = CategoryTypeMonth(
                 category_type=category_type,
                 year_month=year_month,
                 include_hidden=include_hidden
-            ) for category_type in category_types
-        ]
+            )
+            if category_type_month.category_type.category_type_id == 0 and category_type_month.categories[0].month_total == 0:
+                continue
+            self.category_types.append(category_type_month)
         self.year_month = year_month
         self.month = Month(year_month=year_month)
         net = self.__get_net()

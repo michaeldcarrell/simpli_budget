@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication
 from datetime import datetime as dt
-from simpli_budget.models import Transactions, Tag, AccessTokens, Accounts, Rule, GroupUser, RuleSet
+from simpli_budget.models import Transactions, Tag, AccessTokens, Accounts, Rule, GroupUser, RuleSet, CategoryMonth
 from helpers.plaid import Plaid
 
 
@@ -131,5 +131,26 @@ class RuleAPI(APIView):
         )
         rule.save()
         return Response(data=rule.to_dict(), status=status.HTTP_201_CREATED)
+
+
+class CategoryMonthAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, category_id: int):
+        month_id = request.data['year_month']
+        category_month = CategoryMonth.objects.filter(
+            category_id=category_id,
+            year_month=month_id
+        ).first()
+        if category_month is None:
+            category_month = CategoryMonth.objects.create(
+                category_id=category_id,
+                year_month=month_id,
+            )
+        category_month.amount = int(request.data['amount'])
+        category_month.save()
+        return Response(data=category_month.to_dict(), status=status.HTTP_200_OK)
+
 
 

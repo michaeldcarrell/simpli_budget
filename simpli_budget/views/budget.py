@@ -22,7 +22,7 @@ class BudgetCategory(LoginRequiredMixin, View):
                     "message": "Category not found"
                 }
             )
-        category_month = CategoryMonth(category=category, year_month=int(month))
+        category_month = CategoryMonth(category=category, year_month=int(month)).get()
         categories = [
             category for category in
             Categories.objects.filter(
