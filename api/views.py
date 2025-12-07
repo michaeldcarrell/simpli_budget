@@ -4,7 +4,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication
 from datetime import datetime as dt
-from simpli_budget.models import Transactions, Tag, AccessTokens, Accounts, Rule, GroupUser, RuleSet, CategoryMonth
+from simpli_budget.models import Transactions, Tag, AccessTokens, Accounts, Rule, GroupUser, RuleSet, CategoryMonth, \
+    Categories, money_display
 from helpers.plaid import Plaid
 
 
@@ -151,6 +152,24 @@ class CategoryMonthAPI(APIView):
         category_month.amount = int(request.data['amount'])
         category_month.save()
         return Response(data=category_month.to_dict(), status=status.HTTP_200_OK)
+
+
+class CategoryAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, category_id: int):
+        category = Categories.objects.get(category_id=category_id) # Will throw an error if not found
+        if not category.user_has_access(request.user):
+            return Response(data={'message': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
+        if 'default_monthly_amount' in request.data:
+            category._default_monthly_amount = money_display(request.data['default_monthly_amount'])
+        if 'hidden' in request.data:
+            category._hidden = request.data['hidden']
+        category.save()
+        return Response(data=category.to_dict(), status=status.HTTP_200_OK)
+
+
 
 
 
