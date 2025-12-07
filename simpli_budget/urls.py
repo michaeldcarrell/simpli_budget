@@ -9,7 +9,7 @@ urlpatterns = [
     path("api/", include("api.urls")),
     path("", views.MonthBudget.as_view(), name="index"),
     path("budget", views.MonthBudget.as_view(), name="budget"),
-    path("categories", views.Categories.as_view(), name="categories"),
+    path("categories", views.CategoriesView.as_view(), name="categories"),
     path("categories/<str:category_id>", views.Category.as_view(), name="category"),
     path(
         "transaction/<str:transaction_id>",

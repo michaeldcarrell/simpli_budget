@@ -1,4 +1,41 @@
 {% extends "_layout.html" %}
+{% load static %}
 {% block title %}{{ title }}{% endblock %}
+{% block scripts %}
+    <script src="{% static "categories/js/classes/Category.js" %}"></script>
+    <script src="{% static "categories/js/index.js" %}"></script>
+{% endblock %}
 {% block body %}
+<ul class="list-group" style="margin-top: 20px;">
+    {% for category_type in category_types %}
+        <li class="list-group-item">
+            <div class="row" style="margin: 5px;">
+                {{ category_type.category_type_name }}
+            </div>
+            <div class="row">
+                <ul class="list-group">
+                    {% for category in category_type.categories %}
+                        <li class="list-group-item">
+                            <div class="row">
+                                <div class="col-2" style="text-align: right;">
+                                    {{ category.category_name }}
+                                </div>
+                                <div class="col-10">
+                                    <input
+                                        category-id="{{ category.category_id }}"
+                                        type="number"
+                                        min="0"
+                                        class="form-control amount"
+                                        placeholder="0"
+                                        value="{{ category.default_monthly_amount_str }}"
+                                    />
+                                </div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </li>
+    {% endfor %}
+</ul>
 {% endblock %}

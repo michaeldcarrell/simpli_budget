@@ -149,6 +149,10 @@ class CategoryType(models.Model):
         db_table = '"budget"."category_type"'
         unique_together = (('group_id', 'category_type_name'),)
 
+    @property
+    def categories(self):
+        return self.categories_set.all()
+
     def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
         return GroupUser.objects.filter(group=self.group, user=user).exists()
 
@@ -171,6 +175,12 @@ class Categories(models.Model):
     @property
     def budget_display(self):
         return money_display(self.default_monthly_amount if self.default_monthly_amount else 0)
+
+    @property
+    def default_monthly_amount_str(self):
+        amount = self.default_monthly_amount if self.default_monthly_amount else 0
+        return_str = f"{amount:.2f}"
+        return return_str
 
     def to_dict(self) -> dict:
         return {
