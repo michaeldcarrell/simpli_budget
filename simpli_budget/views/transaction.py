@@ -50,6 +50,13 @@ class Transaction(LoginRequiredMixin, View):
             'transaction_tags': current_transaction_tags,
             'inputs': [
                 Input(
+                    id='transaction_name',
+                    label='Transaction Name',
+                    type='text',
+                    value=transaction.name,
+                    disabled=True
+                ),
+                Input(
                     id='account',
                     label='Account',
                     type='text',
