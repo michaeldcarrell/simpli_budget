@@ -28,7 +28,7 @@ class BudgetCategory(LoginRequiredMixin, View):
             Categories.objects.filter(
                 category_type__group_id=group_id,
                 hidden=False
-            )
+            ).order_by("category_type__sort_index", "sort_index")
         ]
 
         # TODO: This will cause issues with New users, currently that category type is attached to my group
