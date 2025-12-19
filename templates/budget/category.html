@@ -7,6 +7,8 @@
 {% block body %}
 <div class="container">
     <h3 style="margin-top: 10px;">{{ category_month.category.category_name }}</h3>
+    <h5>{{ category_month.month_total_display }}</h5>
+    <hr/>
 {% for transaction in category_month.transactions %}
     <div class="row row-card" style="margin-top: 5px;">
         <div class="col-8">
