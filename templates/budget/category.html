@@ -10,7 +10,7 @@
     <h5>{{ category_month.month_total_display }}</h5>
     <hr/>
 {% for transaction in category_month.transactions %}
-    <div class="row row-card" style="margin-top: 5px;">
+    <div class="row row-card category-month-transaction" style="margin-top: 5px;">
         <div class="col-8">
             <a href="/transaction/{{ transaction.transaction_id }}"
                style="width: 100%; text-decoration: none; cursor: pointer; color: black;">
@@ -34,5 +34,6 @@
 {% endblock %}
 {% block scripts %}
     <script src="{% static 'transaction/js/classes/Transaction.js' %}"></script>
+    <script src="{%  static 'budget/classes/CategoryMonth.js' %}"></script>
     <script src="{% static 'budget/js/category.js' %}"></script>
 {% endblock %}
