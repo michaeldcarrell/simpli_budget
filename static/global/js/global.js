@@ -12,6 +12,16 @@ let getCookie = (name) => {
     }
 };
 
+let getQueryParamValue = function(name) {
+    let queryParamsObj = {};
+    let queryParams = window.location.search.substring(1).split('&');
+    queryParams.forEach(function(param) {
+        let paramKeyValue = param.split('=');
+        queryParamsObj[paramKeyValue[0]] = paramKeyValue[1];
+    })
+    return queryParamsObj[name];
+}
+
 let getCSRFToken = () => {
     return getCookie('csrftoken');
 }
