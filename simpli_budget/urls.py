@@ -17,6 +17,11 @@ urlpatterns = [
         name="transaction",
     ),
     path(
+      "transactions/search",
+        views.TransactionSearch.as_view(),
+        name="transaction_search"
+    ),
+    path(
         "budget/category/<int:category_id>",
         views.BudgetCategory.as_view(),
         name="budget",

@@ -28,7 +28,6 @@ def user_to_dict(user: settings.AUTH_USER_MODEL) -> dict:
         'date_joined': user.date_joined.isoformat(),
     }
 
-
 class Group(models.Model):
     group_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=32, null=False)
@@ -49,6 +48,18 @@ class Group(models.Model):
 
     def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
         return GroupUser.objects.filter(group=self, user=user).exists()
+
+
+def get_user_group(user: settings.AUTH_USER_MODEL, request = None) -> Group:
+    group = GroupUser.objects.filter(user_id=user.id, user_default_group=True).first().group
+    if request is not None:
+        query_param_group_id = request.GET.get('group_id')
+        if query_param_group_id is not None:
+            group = Group.objects.filter(group_id=query_param_group_id).first()
+        elif type(request) == dict and request.get('data') is not None and 'group_id' in request.data:
+            group = Group.objects.filter(group_id=request.data['group_id']).first()
+    return group
+
 
 class GroupUser(models.Model):
     group_user_id = models.AutoField(primary_key=True)
@@ -482,6 +493,20 @@ class Transactions(models.Model):
     def group(self):
         return self.account.group
 
+    def to_list(self, fields: list[str], public: bool = True):
+        transaction = self.to_dict(public=public)
+        transaction_list = []
+        for field in fields:
+            field_return = transaction
+            if '.' in field:
+                field_parts = field.split('.')
+                for part in field_parts:
+                    field_return = field_return[part]
+            else:
+                field_return = field_return[field]
+            transaction_list.append(field_return)
+        return transaction_list
+
     def to_dict(self, public: bool = True):
         return_dict = {
             'transaction_id': self.transaction_id,
@@ -493,10 +518,11 @@ class Transactions(models.Model):
             'name': self.name,
             'merchant_name': self.merchant_name,
             'iso_currency_code': self.iso_currency_code,
-            'date': self.date.date_display,
+            'date': self.date.date.isoformat(),
             'authorized_date': self.authorized_date.isoformat() if self.authorized_date else None,
             'pending': self.pending,
             'amount': self.amount,
+            'display_amount': self.display_amount,
             'website': self.website,
             'logo_url': self.logo_url,
             'group': self.group.to_dict(),
