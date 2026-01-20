@@ -1,0 +1,42 @@
+{% extends "_layout.html" %}
+{% load static %}
+{% block styles %}
+    <link href="https://cdn.datatables.net/v/dt/dt-2.3.6/datatables.min.css" rel="stylesheet" integrity="sha384-kl/GL6Bf/pDfgmgFKZ4XzwANesvO6EBSlfZFyztPhoFTDcL7H8rdOAYRXwGyOfCK" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <link href="{% static 'transaction/css/search.css' %}">
+{% endblock %}
+{% block title %}{{ title }}{% endblock %}
+{% block body %}
+    <div class="hidden">
+        <select class="form-control" id="category-template">
+            <option value="-999">All</option>
+        {% for category in categories %}
+            <option value="{{ category.category_id }}">{{ category.category_name }}</option>
+        {% endfor %}
+        </select>
+        <select class="form-control" id="account-template">
+            <option value="-999">All</option>
+        {% for account in accounts %}
+            <option value="{{ account.account_id }}">{{ account.display_name }}</option>
+        {% endfor %}
+        </select>
+    </div>
+    <table id="transactions-table" class="display">
+        <tfoot>
+            <tr>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Amount</th>
+                <th>Account</th>
+                <th>Category</th>
+            </tr>
+        </tfoot>
+    </table>
+{% endblock %}
+{% block scripts %}
+    <script src="https://cdn.datatables.net/v/dt/dt-2.3.6/datatables.min.js" integrity="sha384-18AyDs6cawP/DD9zgSqUrUeo+moSbSkFr4pe43ttGuiPDGYQitDsvTjtrDnVzrZg" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <script src="{% static '/budget/classes/Budget.js' %}"></script>
+    <script src="{% static 'transaction/js/search.js' %}"></script>
+{% endblock %}

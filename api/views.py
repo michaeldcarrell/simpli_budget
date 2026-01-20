@@ -1,10 +1,22 @@
+import math
+
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication
 from datetime import datetime as dt
-from simpli_budget.models import Transactions, Tag, AccessTokens, Accounts, Rule, GroupUser, RuleSet, CategoryMonth
+from simpli_budget.models import (
+    get_user_group,
+    Transactions,
+    Tag,
+    AccessTokens,
+    Accounts,
+    Rule,
+    GroupUser,
+    RuleSet,
+    CategoryMonth
+)
 from helpers.plaid import Plaid
 
 
@@ -151,6 +163,125 @@ class CategoryMonthAPI(APIView):
         category_month.amount = int(request.data['amount'])
         category_month.save()
         return Response(data=category_month.to_dict(), status=status.HTTP_200_OK)
+
+
+class TransactionsAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def __transactions_response(
+            self,
+            request,
+            page_number: int,
+            page_size: int,
+            ordering: dict = None,
+            filters: dict = None,
+    ):
+        if ordering is None or ordering == {}:
+            ordering = {'column': 'date', 'direction': 'desc'}
+        ordering_map = {
+            'display_amount': '_amount',
+            'category.category_name': 'category_id'
+        }
+        ordering_column = ordering_map.get(ordering['column'], ordering['column'])
+        ordering_direction = '-' if ordering.get('direction', 'asc') == 'desc' else ''
+        ordering = f'{ordering_direction}{ordering_column}'
+
+        if filters is None:
+            filters = {}
+        filters['category__category_type__group_id'] = get_user_group(request.user, request)
+        offset = (page_number - 1) * page_size
+        page_end = offset + page_size
+        group_query_set = (
+            Transactions
+                .objects
+                .select_related('category', 'account')
+                .filter(**filters)
+                .order_by(ordering)
+        )
+        transactions_select = group_query_set[offset:page_end].values(
+            'date',
+            'name',
+            '_amount',
+            'account__name',
+            'account__given_name',
+            'category__category_name'
+        )
+
+        total_records = group_query_set.count()
+        transactions = [
+            {
+                'date': transaction['date'].strftime('%Y-%m-%d'),
+                'name': transaction['name'],
+                'account': transaction['account__name'] if transaction['account__given_name'] is None else transaction['account__given_name'],
+                'display_amount': transaction['_amount'],
+                'category': {
+                    'category_name': transaction['category__category_name'],
+                },
+            } for transaction in transactions_select
+        ]
+        max_page = math.ceil(total_records / page_size)
+        has_next_page = max_page > page_number
+
+        return Response(
+            data={
+                "transactions": transactions,
+                "paging": {
+                    "page": page_number,
+                    "page_size": page_size,
+                    "total_pages": max_page,
+                    "total_records": total_records,
+                    "has_next_page": has_next_page,
+                    "next_page": page_number + 1 if has_next_page else None,
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def get(self, request):
+        page_number = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 10))
+
+        return self.__transactions_response(request, page_number, page_size)
+
+    def post(self, request):
+        body = request.data
+        page_number = body.get('page', 1)
+        page_size = body.get('page_size', 10)
+
+        ordering = body.get('ordering', {
+            'column': 'date',
+            'direction': 'desc'
+        })
+
+        filter_mapping = {
+            'name': 'name__icontains',
+            'display_amount': '_amount__icontains'
+        }
+
+        input_filters = body.get('filters', {})
+        filters = {}
+
+        for key, search_value in input_filters.items():
+            if key == 'date':
+                bounds = search_value.split(' - ')
+                filters['date__gte'] = dt.strptime(bounds[0], '%m/%d/%Y').strftime('%Y-%m-%d')
+                filters['date__lte'] = dt.strptime(bounds[1], '%m/%d/%Y').strftime('%Y-%m-%d')
+                continue
+            elif key == 'category.category_name':
+                if int(search_value) != -999:
+                    filters['category_id'] = int(search_value)
+                continue
+            elif key == 'account':
+                if int(search_value) != -999:
+                    filters['account_id'] = int(search_value)
+                continue
+            if key in filter_mapping:
+                filters[filter_mapping[key]] = search_value
+            else:
+                filters[key] = search_value
+
+        return self.__transactions_response(request, page_number, page_size, ordering, filters)
 
 
 

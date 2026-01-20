@@ -3,7 +3,14 @@ from typing import NamedTuple
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
 from django.views import View
-from simpli_budget.models import Transactions, Categories, Tag
+from simpli_budget.models import (
+    Transactions,
+    Categories,
+    Tag,
+    GroupUser,
+    get_user_group,
+    Accounts,
+)
 from helpers import Input
 
 class CurrentTransactionTag(NamedTuple):
@@ -87,3 +94,15 @@ class Transaction(LoginRequiredMixin, View):
             ]
         }
         return render(request, template_name="transaction/index.html", context=context)
+
+
+class TransactionSearch(LoginRequiredMixin, View):
+    def get(self, request):
+        group_id = get_user_group(request.user, request)
+        categories = Categories.objects.filter(category_type__group_id=group_id).order_by("category_type__sort_index", "sort_index")
+        accounts = Accounts.objects.filter(group_id=group_id, deleted=False)
+        context = {
+            'categories': categories,
+            'accounts': accounts
+        }
+        return render(request, template_name="transaction/search.html", context=context)
