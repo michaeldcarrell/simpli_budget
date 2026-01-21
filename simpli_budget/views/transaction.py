@@ -101,8 +101,10 @@ class TransactionSearch(LoginRequiredMixin, View):
         group_id = get_user_group(request.user, request)
         categories = Categories.objects.filter(category_type__group_id=group_id).order_by("category_type__sort_index", "sort_index")
         accounts = Accounts.objects.filter(group_id=group_id, deleted=False)
+        tags = Tag.objects.filter(group_id=group_id, deleted=False)
         context = {
             'categories': categories,
-            'accounts': accounts
+            'accounts': accounts,
+            'tags': tags,
         }
         return render(request, template_name="transaction/search.html", context=context)

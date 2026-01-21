@@ -15,7 +15,8 @@ from simpli_budget.models import (
     Rule,
     GroupUser,
     RuleSet,
-    CategoryMonth
+    CategoryMonth,
+    TransactionSearch
 )
 from helpers.plaid import Plaid
 
@@ -188,40 +189,34 @@ class TransactionsAPI(APIView):
         ordering = f'{ordering_direction}{ordering_column}'
 
         if filters is None:
-            filters = {}
-        filters['category__category_type__group_id'] = get_user_group(request.user, request)
+            filters = {
+                'transactiontag': 'is not None'
+            }
+        filters['group_id'] = get_user_group(request.user, request).group_id
         offset = (page_number - 1) * page_size
         page_end = offset + page_size
         group_query_set = (
-            Transactions
+            TransactionSearch
                 .objects
-                .select_related('category', 'account')
                 .filter(**filters)
                 .order_by(ordering)
         )
-        transactions_select = group_query_set[offset:page_end].values(
-            'date',
-            'name',
-            '_amount',
-            'account__name',
-            'account__given_name',
-            'category__category_name'
-        )
 
-        total_records = group_query_set.count()
-        transactions = [
-            {
-                'date': transaction['date'].strftime('%Y-%m-%d'),
-                'name': transaction['name'],
-                'account': transaction['account__name'] if transaction['account__given_name'] is None else transaction['account__given_name'],
-                'display_amount': transaction['_amount'],
-                'category': {
-                    'category_name': transaction['category__category_name'],
-                },
-            } for transaction in transactions_select
-        ]
+        total_records = len(group_query_set)
+
         max_page = math.ceil(total_records / page_size)
         has_next_page = max_page > page_number
+
+        transactions = [
+            {
+                'date': transaction.date.isoformat(),
+                'name': transaction.name,
+                'amount': transaction.amount,
+                'account': transaction.account,
+                'category': transaction.category,
+                'tags': transaction.tags
+            } for transaction in group_query_set[offset:page_end]
+        ]
 
         return Response(
             data={
@@ -256,7 +251,8 @@ class TransactionsAPI(APIView):
 
         filter_mapping = {
             'name': 'name__icontains',
-            'display_amount': '_amount__icontains'
+            'display_amount': '_amount__icontains',
+            'tags': 'tags__icontains',
         }
 
         input_filters = body.get('filters', {})
@@ -273,8 +269,12 @@ class TransactionsAPI(APIView):
                     filters['category_id'] = int(search_value)
                 continue
             elif key == 'account':
-                if int(search_value) != -999:
-                    filters['account_id'] = int(search_value)
+                if search_value != '-999':
+                    filters['account_id'] = search_value
+                continue
+            elif key == 'tags':
+                if search_value != '-999':
+                    filters['tags__icontains'] = search_value
                 continue
             if key in filter_mapping:
                 filters[filter_mapping[key]] = search_value

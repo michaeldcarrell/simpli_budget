@@ -20,6 +20,12 @@
             <option value="{{ account.account_id }}">{{ account.display_name }}</option>
         {% endfor %}
         </select>
+        <select class="form-control" id="tags-template">
+            <option value="-999">All</option>
+        {% for tag in tags %}
+            <option value="{{ tag.name }}">{{ tag.name }}</option>
+        {% endfor %}
+        </select>
     </div>
     <table id="transactions-table" class="display">
         <tfoot>
@@ -29,6 +35,7 @@
                 <th>Amount</th>
                 <th>Account</th>
                 <th>Category</th>
+                <th>Tags</th>
             </tr>
         </tfoot>
     </table>
