@@ -1,6 +1,6 @@
 {% extends "_layout.html" %}
 {% load static %}
-{% block title %}Simpli Budget{% endblock %}
+{% block title %}{{ budget_month.month.name_short_chopped }}{% endblock %}
 {% block styles %}
     <link rel="stylesheet" href="{% static "budget/css/month_overview.css" %}">
 {% endblock %}

@@ -225,6 +225,7 @@ class Month:
         self.end_of_month_date = Date.objects.filter(year_month=year_month).order_by('date').last()
         self.name = f"{self.start_of_month_date.month_name}, {self.start_of_month_date.year}"
         self.name_short = f"{self.start_of_month_date.month_name_short}, {self.start_of_month_date.year}"
+        self.name_short_chopped = f"{self.start_of_month_date.month_name_short}, {str(self.start_of_month_date.year)[-2:]}"
         self.__start_dt = dt(year=self.start_of_month_date.year, month=self.start_of_month_date.month_number, day=1)
         self.__next_month_dt = self.__start_dt + relativedelta(months=1)
         self.__last_month_dt = self.__start_dt - relativedelta(months=1)
