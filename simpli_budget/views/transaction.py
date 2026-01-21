@@ -106,5 +106,6 @@ class TransactionSearch(LoginRequiredMixin, View):
             'categories': categories,
             'accounts': accounts,
             'tags': tags,
+            'title': 'Transaction Search'
         }
         return render(request, template_name="transaction/search.html", context=context)
