@@ -661,3 +661,20 @@ class Rule(models.Model):
 
     def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
         return GroupUser.objects.filter(group=self.set.group, user=user).exists()
+
+
+class TransactionSearch(models.Model):
+    transaction_id = models.TextField(unique=True, primary_key=True)
+    group_id = models.IntegerField(null=False)
+    category_id = models.IntegerField(null=False)
+    account_id = models.TextField(null=False)
+    date = models.DateField(null=False)
+    name = models.TextField(null=False)
+    amount = models.TextField(blank=False, null=False)
+    account = models.TextField(blank=False, null=False)
+    category = models.TextField(blank=False, null=False)
+    tags = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = '"budget"."transaction_search"'

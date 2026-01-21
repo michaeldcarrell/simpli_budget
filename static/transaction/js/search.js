@@ -14,9 +14,10 @@ let controller = async function() {
             columns: [
                 {data: 'date', title: 'Date'},
                 {data: 'name', title: 'Name'},
-                {data: 'display_amount', title: 'Amount'},
+                {data: 'amount', title: 'Amount'},
                 {data: 'account', title: 'Account'},
-                {data: 'category.category_name', title: 'Category'},
+                {data: 'category', title: 'Category'},
+                {data: 'tags', title: 'Tags'}
             ],
             ajax: async function(data, callback, settings) {
                 const page = (data.start / data.length) + 1;
@@ -73,8 +74,9 @@ let controller = async function() {
                                 column.search($(this).val()).draw();
                             });
                         }
-                        else if (title === 'Account') {
-                            let selector = document.getElementById('account-template').cloneNode(true);
+                        else if (['Account', 'Tags'].includes(title)) {
+                            let selectorId = title.toLowerCase();
+                            let selector = document.getElementById(`${selectorId}-template`).cloneNode(true);
                             selector.removeAttribute('id');
                             column.footer().replaceChildren(selector);
 
