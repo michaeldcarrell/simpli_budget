@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
 from django.views import View
@@ -68,5 +69,6 @@ class MonthBudget(LoginRequiredMixin, View):
                 include_hidden=attributes.show_hidden
             ),
             'svg_button_size': 32,
+            'is_demo_group': settings.DEMO_GROUP_ID is not None and int(group_id) == settings.DEMO_GROUP_ID,
         }
         return render(request, template_name="budget/month_overview.html", context=context)
