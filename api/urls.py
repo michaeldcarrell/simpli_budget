@@ -10,5 +10,6 @@ urlpatterns = [
     path('rule_set', RuleSetAPI.as_view(), name='Rule Set'),
     path('rule_set/<int:rule_set_id>', RuleSetAPI.as_view(), name='Rule Set'),
     path('rule_set/<int:rule_set_id>/rule', RuleAPI.as_view(), name='Rule'),
-    path('category/<int:category_id>/month', CategoryMonthAPI.as_view(), name='Category Month')
+    path('category/<int:category_id>/month', CategoryMonthAPI.as_view(), name='Category Month'),
+    path('demo/generate_activity', DemoGenerateActivityAPI.as_view(), name='Demo Generate Activity'),
 ]

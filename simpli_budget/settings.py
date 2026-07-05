@@ -23,6 +23,10 @@ PLAID_CLIENT_ID = '61717ac944fc260012f96bc9'
 PLAID_SECRET = config('PLAID_SECRET')
 CBA_POSTGRES_DB_PASS = config('CBA_POSTGRES_DB_PASS')
 
+# Group id allowed to generate its own fake demo transactions via the API (see helpers/demo_data.py).
+# Left unset outside the demo environment so the endpoint stays disabled everywhere else.
+DEMO_GROUP_ID = config('DEMO_GROUP_ID', default=None, cast=lambda v: int(v) if v else None)
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
