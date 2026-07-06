@@ -542,9 +542,31 @@ class Transactions(models.Model):
         return GroupUser.objects.filter(group=self.account.group, user=user).exists()
 
 
+class TagType(models.Model):
+    tag_type_id = models.AutoField(primary_key=True)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, null=False)
+    name = models.CharField(max_length=64, null=False)
+    created_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = '"budget"."tag_type"'
+
+    def to_dict(self):
+        return {
+            'tag_type_id': self.tag_type_id,
+            'group': self.group.to_dict(),
+            'name': self.name,
+        }
+
+    def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
+        return GroupUser.objects.filter(group=self.group, user=user).exists()
+
+
 class Tag(models.Model):
     tag_id = models.AutoField(primary_key=True)
     group = models.ForeignKey(Group, on_delete=models.CASCADE, null=False)
+    tag_type = models.ForeignKey(TagType, on_delete=models.DO_NOTHING, null=False)
     name = models.CharField(max_length=32, null=False)
     deleted = models.BooleanField(default=False, null=False)
     created_at = models.DateTimeField(auto_now_add=True, null=False)
@@ -558,6 +580,7 @@ class Tag(models.Model):
         return {
             'tag_id': self.tag_id,
             'group': self.group.to_dict(),
+            'tag_type': self.tag_type.to_dict(),
             'name': self.name,
             'deleted': self.deleted,
             'created_at': self.created_at.isoformat(),

@@ -14,6 +14,7 @@ from simpli_budget.models import (
     get_user_group,
     Transactions,
     Tag,
+    TagType,
     AccessTokens,
     Accounts,
     Rule,
@@ -248,6 +249,66 @@ class CategoryAPI(APIView):
             Rule.objects.filter(set__default_category_id=category_id).update(active=False, updated_at=now)
 
         return Response(data=category.to_dict(), status=status.HTTP_200_OK)
+
+
+class TagTypeAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        group = get_user_group(request.user, request)
+        if group is None or not GroupUser.objects.filter(group=group, user=request.user).exists():
+            return Response(data={'message': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        name = (request.data.get('name') or '').strip()
+        if not name:
+            return Response(data={'message': 'Name is required'}, status=status.HTTP_400_BAD_REQUEST)
+        if TagType.objects.filter(group=group, name=name).exists():
+            return Response(data={'message': 'A tag type with that name already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+        tag_type = TagType.objects.create(group=group, name=name, created_at=dt.now(tz=UTC))
+        return Response(data=tag_type.to_dict(), status=status.HTTP_201_CREATED)
+
+
+class TagAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        group = get_user_group(request.user, request)
+        if group is None or not GroupUser.objects.filter(group=group, user=request.user).exists():
+            return Response(data={'message': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        name = (request.data.get('name') or '').strip()
+        if not name:
+            return Response(data={'message': 'Name is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        tag_type = TagType.objects.filter(tag_type_id=request.data.get('tag_type_id'), group=group).first()
+        if tag_type is None:
+            return Response(data={'message': 'Tag type not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        existing_tag = Tag.objects.filter(group=group, name=name).first()
+        if existing_tag is not None:
+            if not existing_tag.deleted:
+                return Response(data={'message': 'A tag with that name already exists'}, status=status.HTTP_400_BAD_REQUEST)
+            # Re-adding a tag that was previously removed - restore it in place rather than
+            # erroring, since the name is still taken by its (soft-deleted) old row.
+            existing_tag.deleted = False
+            existing_tag.tag_type = tag_type
+            existing_tag.save()
+            return Response(data=existing_tag.to_dict(), status=status.HTTP_200_OK)
+
+        tag = Tag.objects.create(group=group, tag_type=tag_type, name=name, deleted=False)
+        return Response(data=tag.to_dict(), status=status.HTTP_201_CREATED)
+
+    def delete(self, request, tag_id: int):
+        tag = Tag.objects.filter(tag_id=tag_id).first()
+        if tag is None or not tag.user_has_access(request.user):
+            return Response(data={'message': 'Tag not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        tag.deleted = True
+        tag.save()
+        return Response(data=tag.to_dict(), status=status.HTTP_200_OK)
 
 
 class CategoryMonthAPI(APIView):

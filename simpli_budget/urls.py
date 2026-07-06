@@ -30,6 +30,7 @@ urlpatterns = [
     path("accounts/<str:account_id>", views.Account.as_view(), name="account"),
     path("rules", views.Rules.as_view(), name="rules"),
     path("rules/<int:rule_set_id>", views.RuleView.as_view(), name="rule"),
+    path("tags", views.Tags.as_view(), name="tags"),
     path("logout", views.Logout.as_view(), name="logout"),
 ]
 
