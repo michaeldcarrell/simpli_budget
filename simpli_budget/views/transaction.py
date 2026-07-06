@@ -32,7 +32,10 @@ class Transaction(LoginRequiredMixin, View):
                 }
             )
         group_id = transaction.category.category_type.group_id
-        categories = Categories.objects.filter(category_type__group_id=group_id).order_by("category_type__sort_index", "sort_index")
+        categories = Categories.objects.filter(
+            category_type__group_id=group_id,
+            deleted=False,
+        ).order_by("category_type__sort_index", "sort_index")
         tags = Tag.objects.filter(group_id=group_id)
         current_transaction_tags = []
         for tag in tags:
@@ -99,7 +102,10 @@ class Transaction(LoginRequiredMixin, View):
 class TransactionSearch(LoginRequiredMixin, View):
     def get(self, request):
         group_id = get_user_group(request.user, request)
-        categories = Categories.objects.filter(category_type__group_id=group_id).order_by("category_type__sort_index", "sort_index")
+        categories = Categories.objects.filter(
+            category_type__group_id=group_id,
+            deleted=False,
+        ).order_by("category_type__sort_index", "sort_index")
         accounts = Accounts.objects.filter(group_id=group_id, deleted=False)
         tags = Tag.objects.filter(group_id=group_id, deleted=False)
         context = {
