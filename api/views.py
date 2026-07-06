@@ -1,5 +1,6 @@
 import math
 
+from django.conf import settings
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -13,12 +14,14 @@ from simpli_budget.models import (
     AccessTokens,
     Accounts,
     Rule,
+    Group,
     GroupUser,
     RuleSet,
     CategoryMonth,
     TransactionSearch
 )
 from helpers.plaid import Plaid
+from helpers.demo_data import generate_recent_activity
 
 
 class TransactionCategoryAPI(APIView):
@@ -283,5 +286,20 @@ class TransactionsAPI(APIView):
 
         return self.__transactions_response(request, page_number, page_size, ordering, filters)
 
+
+class DemoGenerateActivityAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if settings.DEMO_GROUP_ID is None:
+            return Response(data={'message': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        group = Group.objects.filter(group_id=settings.DEMO_GROUP_ID).first()
+        if group is None or not group.user_has_access(request.user):
+            return Response(data={'message': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        transactions = generate_recent_activity(group)
+        # Demo accounts have no real Plaid access_token, and Accounts.to_dict()/Transactions.to_dict()
+        # assume one exists, so just report a count rather than serializing the created rows.
+        return Response(data={'created_count': len(transactions)}, status=status.HTTP_200_OK)
 
 
