@@ -1,4 +1,106 @@
 {% extends "_layout.html" %}
+{% load static %}
 {% block title %}{{ title }}{% endblock %}
 {% block body %}
+<div class="row" style="margin: 10px 0;">
+    <div class="col">
+        <h2>Categories</h2>
+    </div>
+</div>
+<div class="row" style="margin: 10px 0;">
+    <div class="col-12 col-lg-8">
+        <form id="new-category-form" class="row g-2 align-items-end">
+            <div class="col-12 col-md-4">
+                <label for="new-category-type" class="form-label">Category Type</label>
+                <select id="new-category-type" class="form-select">
+                    {% for category_type in category_types %}
+                    <option value="{{ category_type.category_type_id }}">{{ category_type.category_type_name }}</option>
+                    {% endfor %}
+                    <option value="__create_group__">+ Create Group</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-4">
+                <label for="new-category-name" class="form-label">Name</label>
+                <input type="text" id="new-category-name" class="form-control" placeholder="e.g. Groceries" required>
+            </div>
+            <div class="col-8 col-md-3">
+                <label for="new-category-amount" class="form-label">Monthly Budget</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="text" inputmode="decimal" id="new-category-amount" class="form-control" value="0">
+                </div>
+            </div>
+            <div class="col-4 col-md-1">
+                <button type="submit" class="btn btn-primary">Add</button>
+            </div>
+        </form>
+        <div id="new-category-error" class="text-danger hidden" style="margin-top: 5px;"></div>
+    </div>
+</div>
+<ul class="list-group">
+{% for section in sections %}
+    <li class="list-group-item">
+        {{ section.category_type.category_type_name }}
+        <ul class="list-group">
+        {% for category in section.categories %}
+            <li class="row list-group-item" style="display: flex!important;">
+                <div class="col">{{ category.category_name }}</div>
+                <div class="col">{{ category.budget_display }}</div>
+                <div class="col-auto">
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-danger delete-category-btn"
+                        data-category-id="{{ category.category_id }}"
+                        data-category-name="{{ category.category_name }}"
+                    >
+                        Remove
+                    </button>
+                </div>
+            </li>
+        {% endfor %}
+        </ul>
+    </li>
+{% endfor %}
+</ul>
+
+<div class="modal fade" id="remove-category-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Remove Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Remove <strong id="remove-category-name"></strong>? Past transactions will keep it, but it will no longer be selectable.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="confirm-remove-category-btn" class="btn btn-danger">Remove</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="create-category-type-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Category Group</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <label for="new-category-type-name" class="form-label">Group Name</label>
+                <input type="text" id="new-category-type-name" class="form-control">
+                <div id="new-category-type-error" class="text-danger hidden" style="margin-top: 5px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="confirm-create-category-type-btn" class="btn btn-primary">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+    <script src="{% static "categories/js/index.js" %}"></script>
 {% endblock %}
