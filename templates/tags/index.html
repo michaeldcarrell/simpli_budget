@@ -1,0 +1,119 @@
+{% extends "_layout.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+{% block body %}
+<div class="row" style="margin: 10px 0;">
+    <div class="col">
+        <h2>Tags</h2>
+    </div>
+</div>
+<div class="row" style="margin: 10px 0;">
+    <div class="col-12 col-lg-6">
+        <form id="new-tag-form" class="row g-2 align-items-end">
+            <div class="col-12 col-md-4">
+                <label for="new-tag-type" class="form-label">Tag Type</label>
+                <select id="new-tag-type" class="form-select">
+                    {% for tag_type in tag_types %}
+                    <option value="{{ tag_type.tag_type_id }}">{{ tag_type.name }}</option>
+                    {% endfor %}
+                    <option value="__create_type__">+ Create Type</option>
+                </select>
+            </div>
+            <div class="col-8 col-md-6">
+                <label for="new-tag-name" class="form-label">Name</label>
+                <input type="text" id="new-tag-name" class="form-control" placeholder="e.g. Vacation" required>
+            </div>
+            <div class="col-4 col-md-2">
+                <button type="submit" class="btn btn-primary">Add</button>
+            </div>
+        </form>
+        <div id="new-tag-error" class="text-danger hidden" style="margin-top: 5px;"></div>
+    </div>
+</div>
+<div class="accordion" id="tags-accordion">
+{% for section in sections %}
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="tag-type-heading-{{ section.tag_type.tag_type_id }}">
+            <button
+                class="accordion-button"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#tag-type-collapse-{{ section.tag_type.tag_type_id }}"
+                aria-expanded="true"
+                aria-controls="tag-type-collapse-{{ section.tag_type.tag_type_id }}"
+            >
+                {{ section.tag_type.name }}
+            </button>
+        </h2>
+        <div
+            id="tag-type-collapse-{{ section.tag_type.tag_type_id }}"
+            class="accordion-collapse collapse show"
+            aria-labelledby="tag-type-heading-{{ section.tag_type.tag_type_id }}"
+        >
+            <div class="accordion-body p-0 ps-4">
+                <ul class="list-group list-group-flush">
+                {% for tag in section.tags %}
+                    <li class="row list-group-item" style="display: flex!important;">
+                        <div class="col">{{ tag.name }}</div>
+                        <div class="col-auto">
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-danger delete-tag-btn"
+                                data-tag-id="{{ tag.tag_id }}"
+                                data-tag-name="{{ tag.name }}"
+                            >
+                                Remove
+                            </button>
+                        </div>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item text-muted">No tags yet.</li>
+                {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+</div>
+
+<div class="modal fade" id="remove-tag-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Remove Tag</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Remove <strong id="remove-tag-name"></strong>? Past transactions will keep it, but it will no longer be selectable.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="confirm-remove-tag-btn" class="btn btn-danger">Remove</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="create-tag-type-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Tag Type</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <label for="new-tag-type-name" class="form-label">Type Name</label>
+                <input type="text" id="new-tag-type-name" class="form-control">
+                <div id="new-tag-type-error" class="text-danger hidden" style="margin-top: 5px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="confirm-create-tag-type-btn" class="btn btn-primary">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+    <script src="{% static "tags/js/index.js" %}"></script>
+{% endblock %}

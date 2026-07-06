@@ -14,5 +14,8 @@ urlpatterns = [
     path('category', CategoryAPI.as_view(), name='Category'),
     path('category/<int:category_id>', CategoryAPI.as_view(), name='Category Delete'),
     path('category/<int:category_id>/month', CategoryMonthAPI.as_view(), name='Category Month'),
+    path('tag_type', TagTypeAPI.as_view(), name='Tag Type'),
+    path('tag', TagAPI.as_view(), name='Tag'),
+    path('tag/<int:tag_id>', TagAPI.as_view(), name='Tag Delete'),
     path('demo/generate_activity', DemoGenerateActivityAPI.as_view(), name='Demo Generate Activity'),
 ]
