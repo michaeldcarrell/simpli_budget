@@ -105,6 +105,53 @@ class PlaidPublicTokenExchangeAPI(APIView):
         return Response(data=access_token.to_dict(), status=status.HTTP_200_OK)
 
 
+class PlaidNewAccountAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        group = get_user_group(request.user, request)
+        plaid = Plaid()
+
+        exchange_response = plaid.public_token_exchange(public_token=request.data['public_token'])
+        if not exchange_response['success']:
+            return Response(data={'message': 'Failed to exchange public token'}, status=status.HTTP_400_BAD_REQUEST)
+
+        now = dt.now(tz=UTC)
+        access_token = AccessTokens.objects.create(
+            group=group,
+            access_token=exchange_response['token'],
+            institution_id=request.data.get('institution_id'),
+            created_at=now,
+            updated_at=now,
+            deleted=False,
+        )
+
+        accounts_response = plaid.get_accounts(access_token.access_token)
+        if not accounts_response['success']:
+            return Response(data={'message': 'Failed to fetch accounts'}, status=status.HTTP_400_BAD_REQUEST)
+
+        for plaid_account in accounts_response['accounts']:
+            balance = plaid_account.get('balances', {}).get('current')
+            account_fields = {
+                'access_token': access_token,
+                'group': group,
+                'type': plaid_account.get('type'),
+                'sub_type': plaid_account.get('subtype'),
+                'name': plaid_account.get('name'),
+                'official_name': plaid_account.get('official_name'),
+                '_balance': f'{balance:.2f}' if balance is not None else None,
+                'deleted': False,
+            }
+            Accounts.objects.update_or_create(
+                account_id=plaid_account['account_id'],
+                defaults={**account_fields, 'updated_at': now},
+                create_defaults={**account_fields, 'transactions_last_updated_at': now, 'created_at': now, 'updated_at': now},
+            )
+
+        return Response(data={'created_count': len(accounts_response['accounts'])}, status=status.HTTP_200_OK)
+
+
 class RuleSetAPI(APIView):
     authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]

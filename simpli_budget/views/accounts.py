@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
 from django.views import View
@@ -23,6 +24,7 @@ class AccountsView(LoginRequiredMixin, View):
                 group_id=group_id,
                 deleted=False,
             ).order_by('name'),
+            'is_demo_group': settings.DEMO_GROUP_ID is not None and int(group_id) == settings.DEMO_GROUP_ID,
         }
         return render(request, template_name='accounts/index.html', context=context)
 
