@@ -73,3 +73,23 @@ class Plaid:
                 'code': res.status_code,
                 'response_text': res.text
             }
+
+    def get_accounts(self, access_token: str):
+        url = f'{self.base_url}/accounts/get'
+        params = {
+            'client_id': self.__client_id,
+            'secret': self.__secret,
+            'access_token': access_token
+        }
+        res = requests.request('POST', url, data=json.dumps(params), headers=self.headers)
+        if res.status_code == 200:
+            return {
+                'success': True,
+                'accounts': res.json()['accounts']
+            }
+        else:
+            return {
+                'success': False,
+                'code': res.status_code,
+                'response_text': res.text
+            }

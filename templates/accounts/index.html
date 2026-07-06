@@ -3,10 +3,24 @@
 {% block title %}My Accounts - Simplibudget{% endblock %}
 {% block scripts %}
     <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+    <script src="{% static "accounts/index.js" %}"></script>
 {% endblock %}
 
 {% block body %}
-<ul class="list-group" style="margin-top: 20px;">
+<div class="row" style="margin-top: 20px;">
+    <div class="col text-end">
+        <button
+            id="add-account-btn"
+            type="button"
+            class="btn btn-primary"
+            link-token="{{ link_token }}"
+            {% if is_demo_group %}disabled title="Adding accounts is disabled for the demo group"{% endif %}
+        >
+            Add Account
+        </button>
+    </div>
+</div>
+<ul class="list-group" style="margin-top: 10px;">
 {% for account in accounts %}
     <a class="list-group-item" href="accounts/{{ account.account_id }}">
         <div class="row">
