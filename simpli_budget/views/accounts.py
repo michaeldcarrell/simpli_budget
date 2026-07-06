@@ -34,9 +34,13 @@ class Account(LoginRequiredMixin, View):
 
         if account is None or not account.user_has_access(request.user):
             return render(request, template_name="error/not_found.html", context={})
-        link_token_response = plaid.get_link_token(access_token=account.access_token.access_token)
+
+        link_token = None
+        if account.access_token is not None:
+            link_token = plaid.get_link_token(access_token=account.access_token.access_token).get('token')
+
         context = {
             'account': account,
-            'link_token': link_token_response.get('token')
+            'link_token': link_token
         }
         return render(request, template_name='accounts/account.html', context=context)
