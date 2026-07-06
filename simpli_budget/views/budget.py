@@ -28,7 +28,8 @@ class BudgetCategory(LoginRequiredMixin, View):
             category for category in
             Categories.objects.filter(
                 category_type__group_id=group_id,
-                hidden=False
+                hidden=False,
+                deleted=False,
             ).order_by("category_type__sort_index", "sort_index")
         ]
 

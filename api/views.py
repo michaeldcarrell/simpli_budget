@@ -1,22 +1,28 @@
 import math
 
 from django.conf import settings
+from django.db import transaction as db_transaction
+from django.db.models import Max
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication
 from datetime import datetime as dt
+from pytz import UTC
 from simpli_budget.models import (
     get_user_group,
     Transactions,
     Tag,
+    TagType,
     AccessTokens,
     Accounts,
     Rule,
     Group,
     GroupUser,
     RuleSet,
+    CategoryType,
+    Categories,
     CategoryMonth,
     TransactionSearch
 )
@@ -147,6 +153,162 @@ class RuleAPI(APIView):
         )
         rule.save()
         return Response(data=rule.to_dict(), status=status.HTTP_201_CREATED)
+
+
+class CategoryTypeAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        group = get_user_group(request.user, request)
+        if group is None or not GroupUser.objects.filter(group=group, user=request.user).exists():
+            return Response(data={'message': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        category_type_name = (request.data.get('category_type_name') or '').strip()
+        if not category_type_name:
+            return Response(data={'message': 'Name is required'}, status=status.HTTP_400_BAD_REQUEST)
+        if CategoryType.objects.filter(group=group, category_type_name=category_type_name).exists():
+            return Response(data={'message': 'A category group with that name already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+        next_sort_index = CategoryType.objects.filter(group=group).aggregate(Max('sort_index'))['sort_index__max']
+        next_sort_index = 0 if next_sort_index is None else next_sort_index + 1
+
+        now = dt.now(tz=UTC)
+        category_type = CategoryType.objects.create(
+            group=group,
+            category_type_name=category_type_name,
+            invert_amounts=False,
+            hidden=False,
+            sort_index=next_sort_index,
+            created_at=now,
+            updated_at=now,
+        )
+        return Response(data=category_type.to_dict(), status=status.HTTP_201_CREATED)
+
+
+class CategoryAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        category_type = CategoryType.objects.filter(
+            category_type_id=request.data.get('category_type_id')
+        ).first()
+        if category_type is None or not category_type.user_has_access(request.user):
+            return Response(data={'message': 'Category type not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        category_name = (request.data.get('category_name') or '').strip()
+        if not category_name:
+            return Response(data={'message': 'Name is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        default_monthly_amount = float(request.data.get('default_monthly_amount') or 0)
+        now = dt.now(tz=UTC)
+
+        existing_category = Categories.objects.filter(category_type=category_type, category_name=category_name).first()
+        if existing_category is not None:
+            if not existing_category.deleted:
+                return Response(data={'message': 'A category with that name already exists'}, status=status.HTTP_400_BAD_REQUEST)
+            # Re-adding a category that was previously removed - restore it in place rather
+            # than erroring, since the name is still taken by its (soft-deleted) old row.
+            existing_category.deleted = False
+            existing_category._default_monthly_amount = f"{default_monthly_amount:.2f}"
+            existing_category.updated_at = now
+            existing_category.save()
+            return Response(data=existing_category.to_dict(), status=status.HTTP_200_OK)
+
+        next_sort_index = (
+            Categories.objects.filter(category_type=category_type).aggregate(Max('sort_index'))['sort_index__max']
+        )
+        next_sort_index = 0 if next_sort_index is None else next_sort_index + 1
+
+        category = Categories.objects.create(
+            category_type=category_type,
+            category_name=category_name,
+            _default_monthly_amount=f"{default_monthly_amount:.2f}",
+            sort_index=next_sort_index,
+            hidden=False,
+            deleted=False,
+            created_at=now,
+            updated_at=now,
+        )
+        return Response(data=category.to_dict(), status=status.HTTP_201_CREATED)
+
+    def delete(self, request, category_id: int):
+        category = Categories.objects.filter(category_id=category_id).first()
+        if category is None or not category.user_has_access(request.user):
+            return Response(data={'message': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        now = dt.now(tz=UTC)
+        with db_transaction.atomic():
+            category.deleted = True
+            category.updated_at = now
+            category.save()
+
+            # A deleted category shouldn't keep auto-categorizing new transactions.
+            RuleSet.objects.filter(default_category_id=category_id).update(active=False, updated_at=now)
+            Rule.objects.filter(set__default_category_id=category_id).update(active=False, updated_at=now)
+
+        return Response(data=category.to_dict(), status=status.HTTP_200_OK)
+
+
+class TagTypeAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        group = get_user_group(request.user, request)
+        if group is None or not GroupUser.objects.filter(group=group, user=request.user).exists():
+            return Response(data={'message': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        name = (request.data.get('name') or '').strip()
+        if not name:
+            return Response(data={'message': 'Name is required'}, status=status.HTTP_400_BAD_REQUEST)
+        if TagType.objects.filter(group=group, name=name).exists():
+            return Response(data={'message': 'A tag type with that name already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+        tag_type = TagType.objects.create(group=group, name=name, created_at=dt.now(tz=UTC))
+        return Response(data=tag_type.to_dict(), status=status.HTTP_201_CREATED)
+
+
+class TagAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        group = get_user_group(request.user, request)
+        if group is None or not GroupUser.objects.filter(group=group, user=request.user).exists():
+            return Response(data={'message': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        name = (request.data.get('name') or '').strip()
+        if not name:
+            return Response(data={'message': 'Name is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        tag_type = TagType.objects.filter(tag_type_id=request.data.get('tag_type_id'), group=group).first()
+        if tag_type is None:
+            return Response(data={'message': 'Tag type not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        existing_tag = Tag.objects.filter(group=group, name=name).first()
+        if existing_tag is not None:
+            if not existing_tag.deleted:
+                return Response(data={'message': 'A tag with that name already exists'}, status=status.HTTP_400_BAD_REQUEST)
+            # Re-adding a tag that was previously removed - restore it in place rather than
+            # erroring, since the name is still taken by its (soft-deleted) old row.
+            existing_tag.deleted = False
+            existing_tag.tag_type = tag_type
+            existing_tag.save()
+            return Response(data=existing_tag.to_dict(), status=status.HTTP_200_OK)
+
+        tag = Tag.objects.create(group=group, tag_type=tag_type, name=name, deleted=False)
+        return Response(data=tag.to_dict(), status=status.HTTP_201_CREATED)
+
+    def delete(self, request, tag_id: int):
+        tag = Tag.objects.filter(tag_id=tag_id).first()
+        if tag is None or not tag.user_has_access(request.user):
+            return Response(data={'message': 'Tag not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        tag.deleted = True
+        tag.save()
+        return Response(data=tag.to_dict(), status=status.HTTP_200_OK)
 
 
 class CategoryMonthAPI(APIView):

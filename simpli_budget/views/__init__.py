@@ -6,6 +6,7 @@ from simpli_budget.views.transaction import Transaction, TransactionSearch
 from simpli_budget.views.budget import BudgetCategory, MonthBudget
 from simpli_budget.views.accounts import AccountsView, Account
 from simpli_budget.views.rules import Rules, RuleView
+from simpli_budget.views.tags import Tags
 
 
 class Logout(View):
