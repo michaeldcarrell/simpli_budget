@@ -2,6 +2,7 @@
 {% load static %}
 {% block styles %}
     <link href="https://cdn.datatables.net/v/dt/dt-2.3.6/datatables.min.css" rel="stylesheet" integrity="sha384-kl/GL6Bf/pDfgmgFKZ4XzwANesvO6EBSlfZFyztPhoFTDcL7H8rdOAYRXwGyOfCK" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/3.2.2/css/buttons.dataTables.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <link href="{% static 'transaction/css/search.css' %}">
 {% endblock %}
@@ -42,6 +43,7 @@
 {% endblock %}
 {% block scripts %}
     <script src="https://cdn.datatables.net/v/dt/dt-2.3.6/datatables.min.js" integrity="sha384-18AyDs6cawP/DD9zgSqUrUeo+moSbSkFr4pe43ttGuiPDGYQitDsvTjtrDnVzrZg" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/buttons/3.2.2/js/dataTables.buttons.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script src="{% static '/budget/classes/Budget.js' %}"></script>

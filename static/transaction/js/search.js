@@ -11,6 +11,62 @@ let controller = async function() {
                 return: true
             },
             order: [[0, 'desc']],
+            layout: {
+                topStart: 'buttons'
+            },
+            buttons: [
+                {
+                    text: 'Export',
+                    action: async function(e, dt) {
+                        const filters = {};
+                        dt.columns().every(function() {
+                            const searchValue = this.search();
+                            if (searchValue) {
+                                filters[this.dataSrc()] = searchValue;
+                            }
+                        });
+
+                        let order_by = {};
+                        const order = dt.order();
+                        if (order && order.length > 0) {
+                            order_by.column = dt.column(order[0][0]).dataSrc();
+                            order_by.direction = order[0][1];
+                        }
+
+                        const columns = [
+                            {data: 'date', title: 'Date'},
+                            {data: 'name', title: 'Name'},
+                            {data: 'amount', title: 'Amount'},
+                            {data: 'account', title: 'Account'},
+                            {data: 'category', title: 'Category'},
+                            {data: 'tags', title: 'Tags'}
+                        ];
+                        const escapeCsv = function(value) {
+                            const stringValue = value === null || value === undefined ? '' : String(value);
+                            return `"${stringValue.replace(/"/g, '""')}"`;
+                        };
+                        const rows = [columns.map(column => escapeCsv(column.title)).join(',')];
+
+                        const totalRecords = dt.page.info().recordsDisplay;
+                        if (totalRecords > 0) {
+                            const response = await budget.searchTransactions(1, totalRecords, filters, order_by);
+                            response.transactions.forEach(transaction => {
+                                rows.push(columns.map(column => escapeCsv(transaction[column.data])).join(','));
+                            });
+                        }
+
+                        const blob = new Blob([rows.join('\n')], {type: 'text/csv;charset=utf-8;'});
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = 'Transactions.csv';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    }
+                }
+            ],
             columns: [
                 {data: 'date', title: 'Date'},
                 {data: 'name', title: 'Name'},
