@@ -4,6 +4,7 @@ from datetime import datetime as dt
 
 from dateutil.relativedelta import relativedelta
 from django.db import transaction as db_transaction
+from pytz import UTC
 
 from simpli_budget.models import (
     Group,
@@ -150,6 +151,11 @@ CATEGORY_TYPE_PROFILES = [
 
 
 def _get_or_create_group() -> Group:
+    from django.conf import settings
+    if settings.DEMO_GROUP_ID is not None:
+        group = Group.objects.filter(group_id=settings.DEMO_GROUP_ID).first()
+        if group is not None:
+            return group
     group, _ = Group.objects.get_or_create(name=DEMO_GROUP_NAME)
     return group
 
@@ -159,7 +165,7 @@ def _ensure_accounts(group: Group) -> dict:
     for key, profile in ACCOUNT_PROFILES.items():
         account = Accounts.objects.filter(group=group, name=profile["name"]).first()
         if account is None:
-            now = dt.now()
+            now = dt.now(tz=UTC)
             account = Accounts.objects.create(
                 account_id=f"demo-{uuid.uuid4().hex}",
                 group=group,
@@ -180,7 +186,7 @@ def _ensure_categories(group: Group) -> tuple[dict, dict]:
     """Returns ({category_name: Categories}, {category_type_name: CategoryType})."""
     categories = {}
     category_types = {}
-    now = dt.now()
+    now = dt.now(tz=UTC)
     for type_profile in CATEGORY_TYPE_PROFILES:
         category_type, _ = CategoryType.objects.get_or_create(
             group=group,
@@ -231,7 +237,7 @@ def _closest_date_for_day(dates: list, day: int):
 
 def _make_transaction(*, account, category, merchant, amount, date, invert_amounts) -> Transactions:
     stored_amount = -amount if invert_amounts else amount
-    now = dt.now()
+    now = dt.now(tz=UTC)
     return Transactions.objects.create(
         transaction_id=f"demo-{uuid.uuid4().hex}",
         account=account,
@@ -314,7 +320,7 @@ def seed_demo_account(months_back: int = 3) -> Group:
     accounts = _ensure_accounts(group)
     categories, category_types = _ensure_categories(group)
 
-    today = dt.now().replace(day=1)
+    today = dt.now(tz=UTC).replace(day=1)
     year_months = [
         int(f"{(today - relativedelta(months=i)).year}{(today - relativedelta(months=i)).month:02}")
         for i in range(months_back, -1, -1)
@@ -344,7 +350,7 @@ def generate_recent_activity(group: Group) -> list:
     so it doesn't disturb anything a demo visitor has already categorized or tagged.
     Fixed-schedule categories (rent, paycheck, subscriptions) are skipped here since
     they shouldn't recur mid-month."""
-    today = dt.now()
+    today = dt.now(tz=UTC)
     year_month = int(f"{today.year}{today.month:02}")
     dates = [date for date in _dates_for_month(year_month) if date.date <= today.date()]
     if not dates:
