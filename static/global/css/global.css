@@ -27,3 +27,15 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+.onboarding-highlight {
+    position: relative;
+    z-index: 1051;
+    outline: 3px solid #0d6efd;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.onboarding-popover {
+    max-width: 320px;
+}

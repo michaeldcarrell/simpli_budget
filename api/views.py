@@ -24,7 +24,8 @@ from simpli_budget.models import (
     CategoryType,
     Categories,
     CategoryMonth,
-    TransactionSearch
+    TransactionSearch,
+    UserAttributes
 )
 from helpers.plaid import Plaid
 from helpers.demo_data import generate_recent_activity
@@ -150,6 +151,15 @@ class PlaidNewAccountAPI(APIView):
             )
 
         return Response(data={'created_count': len(accounts_response['accounts'])}, status=status.HTTP_200_OK)
+
+
+class OnboardingAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        UserAttributes.objects.filter(user=request.user).update(onboarding_completed=True)
+        return Response(data={'onboarding_completed': True}, status=status.HTTP_200_OK)
 
 
 class RuleSetAPI(APIView):
