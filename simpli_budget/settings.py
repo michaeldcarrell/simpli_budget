@@ -22,6 +22,8 @@ CBA_LAMBDA_KEY = config('CBA_LAMBDA_KEY')
 PLAID_CLIENT_ID = '61717ac944fc260012f96bc9'
 PLAID_SECRET = config('PLAID_SECRET')
 CBA_POSTGRES_DB_PASS = config('CBA_POSTGRES_DB_PASS')
+CBA_POSTGRES_DB_HOST = config('CBA_POSTGRES_DB_HOST', default='34.55.159.77')
+CBA_POSTGRES_DB_USER = config('CBA_POSTGRES_DB_USER', default='mdc_admin')
 
 # Group id allowed to generate its own fake demo transactions via the API (see helpers/demo_data.py).
 # Left unset outside the demo environment so the endpoint stays disabled everywhere else.
@@ -31,6 +33,11 @@ DEMO_GROUP_ID = config('DEMO_GROUP_ID', default=None, cast=lambda v: int(v) if v
 DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = ['*']
+
+# Nginx Proxy Manager terminates TLS and proxies to this app over plain HTTP,
+# forwarding X-Forwarded-Proto so Django can tell the original request was HTTPS
+# (needed for allauth to build the https:// Google OAuth callback URL correctly).
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Application definition
@@ -116,9 +123,9 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "DATABASE": "simplibudget",
         "NAME": "simplibudget",
-        "USER": "mdc_admin",
+        "USER": CBA_POSTGRES_DB_USER,
         "PASSWORD": CBA_POSTGRES_DB_PASS,
-        "HOST": "34.55.159.77",
+        "HOST": CBA_POSTGRES_DB_HOST,
         "POST": "5432",
         #  Use this when utilizing python manage.py inspectdb > models.py
         # 'OPTIONS': {
