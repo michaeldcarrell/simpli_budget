@@ -1,0 +1,9 @@
+.git
+.gitignore
+.idea
+.env
+.venv
+/staticfiles
+__pycache__
+*.pyc
+test.py

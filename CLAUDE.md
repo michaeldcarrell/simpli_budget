@@ -36,6 +36,12 @@ There is no configured linter/formatter and no JS build step (static JS is hand-
 
 Production runs via gunicorn (`Procfile`): `gunicorn simpli_budget.wsgi`.
 
+Seed demo data (creates/reuses a "Demo Household" group with fake accounts, categories, and a few months of transaction history):
+```bash
+python manage.py seed_demo_data [--months-back N]   # default 3, safe to re-run
+```
+Prints a `group_id` — set it as `DEMO_GROUP_ID` in `.env` to enable the in-app "generate more activity" endpoint (`DemoGenerateActivityAPI`, see below).
+
 ## Architecture
 
 ### Two Django apps
@@ -57,7 +63,10 @@ Every user belongs to one or more `Group`s through `GroupUser` (one row has `use
 ### Auth
 Google-only social login via django-allauth: `SOCIALACCOUNT_ONLY = True` and `CustomAccountAdapter.is_open_for_signup` returns `False` (`simpli_budget/adapter.py`), so there's no username/password signup path. `CustomSocialAccountAdapter.pre_social_login` links a Google login to an existing `User` by email instead of creating a duplicate. Page views use `LoginRequiredMixin`; API views use DRF `SessionAuthentication` + `IsAuthenticated`.
 
-`SetUserAttributeDefaults` middleware (`simpli_budget/middleware.py`) lazily creates a `UserAttributes` row (currently just a `show_hidden` category-visibility preference) the first time an authenticated user is seen.
+`SetUserAttributeDefaults` middleware (`simpli_budget/middleware.py`) lazily creates a `UserAttributes` row (a `show_hidden` category-visibility preference and an `onboarding_completed` flag, set via `OnboardingAPI`) the first time an authenticated user is seen.
+
+### Demo data
+`helpers/demo_data.py` (`seed_demo_account`, `generate_recent_activity`) builds/extends a fake "Demo Household" `Group` with accounts, categories, and transactions — used both by the `seed_demo_data` management command (see Commands) and by `DemoGenerateActivityAPI` (`api/views.py`), which lets a logged-in demo user top up activity from the UI. The endpoint is gated on `settings.DEMO_GROUP_ID` (from the `DEMO_GROUP_ID` env var) matching the requested group and the user having access to it. Demo accounts have no real Plaid `access_token`, so `Accounts.to_dict()`/`Transactions.to_dict()` can't be used on them as-is.
 
 ### Budget aggregation helpers
 `Month`, `CategoryTypeMonth`, and `BudgetMonth` in `models.py` are plain Python classes (not Django models) that assemble the month-overview page: `year_month` is an integer in `YYYYMM` form; `Month` looks up calendar metadata from the `Date` model (a pre-populated date-dimension table); `BudgetMonth` walks `CategoryType` → `CategoryMonth` → `Transactions` to compute per-category and net income/expense totals for a given month, applying `invert_amounts` per category type (income categories are stored/inverted differently from expenses).
