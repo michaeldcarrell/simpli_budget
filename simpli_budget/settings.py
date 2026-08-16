@@ -22,7 +22,7 @@ CBA_LAMBDA_KEY = config('CBA_LAMBDA_KEY')
 PLAID_CLIENT_ID = '61717ac944fc260012f96bc9'
 PLAID_SECRET = config('PLAID_SECRET')
 CBA_POSTGRES_DB_PASS = config('CBA_POSTGRES_DB_PASS')
-CBA_POSTGRES_DB_HOST = config('CBA_POSTGRES_DB_HOST', default='34.55.159.77')
+CBA_POSTGRES_DB_HOST = config('CBA_POSTGRES_DB_HOST')
 CBA_POSTGRES_DB_USER = config('CBA_POSTGRES_DB_USER', default='mdc_admin')
 
 # Group id allowed to generate its own fake demo transactions via the API (see helpers/demo_data.py).
