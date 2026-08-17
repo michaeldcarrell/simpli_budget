@@ -3,3 +3,7 @@ tfoot input {
     padding: 3px;
     box-sizing: border-box;
 }
+
+#transactions-table tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}

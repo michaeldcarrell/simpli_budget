@@ -75,6 +75,12 @@ let controller = async function() {
                 {data: 'category', title: 'Category'},
                 {data: 'tags', title: 'Tags'}
             ],
+            createdRow: function(row, data, dataIndex) {
+                row.style.cursor = 'pointer';
+                row.addEventListener('click', function() {
+                    window.open(`/transaction/${data.id}`, '_blank');
+                });
+            },
             ajax: async function(data, callback, settings) {
                 const page = (data.start / data.length) + 1;
 

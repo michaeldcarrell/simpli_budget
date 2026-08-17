@@ -431,6 +431,7 @@ class TransactionsAPI(APIView):
 
         transactions = [
             {
+                'id': transaction.transaction_id,
                 'date': transaction.date.isoformat(),
                 'name': transaction.name,
                 'amount': transaction.amount,
