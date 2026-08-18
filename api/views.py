@@ -31,6 +31,10 @@ from helpers.plaid import Plaid
 from helpers.demo_data import generate_recent_activity
 
 
+AI_CATEGORIZATION_TAG_TYPE_NAME = 'System'
+AI_CATEGORIZATION_TAG_NAMES = ('AI Categorized', 'AI Uncertain')
+
+
 class TransactionCategoryAPI(APIView):
     authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]
@@ -42,6 +46,13 @@ class TransactionCategoryAPI(APIView):
         transaction.category_id = int(request.data['category_id'])
         transaction.updated_at = dt.now()
         transaction.save()
+        # A human just set the category directly, so the AI categorizer's tags no longer
+        # describe how this transaction was categorized - drop them so it isn't picked up
+        # as "already handled by AI" or shown as AI-sourced in the UI.
+        transaction.transactiontag_set.filter(
+            tag__name__in=AI_CATEGORIZATION_TAG_NAMES,
+            tag__tag_type__name=AI_CATEGORIZATION_TAG_TYPE_NAME,
+        ).delete()
         return_transaction = transaction.to_dict()
         return Response(data=return_transaction, status=status.HTTP_200_OK)
 
