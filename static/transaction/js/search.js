@@ -1,6 +1,35 @@
 let controller = async function() {
     let budget = new Budget();
     console.log(budget.transactions);
+
+    const columnsConfig = [
+        {data: 'date', title: 'Date'},
+        {data: 'name', title: 'Name'},
+        {data: 'amount', title: 'Amount'},
+        {data: 'account', title: 'Account'},
+        {data: 'category', title: 'Category'},
+        {data: 'tags', title: 'Tags'}
+    ];
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchCols = columnsConfig.map(function(column) {
+        const value = urlParams.get(column.data);
+        return value ? {search: value} : null;
+    });
+
+    const updateUrlFromTable = function(dt) {
+        const params = new URLSearchParams();
+        dt.columns().every(function() {
+            const value = this.search();
+            if (value) {
+                params.set(this.dataSrc(), value);
+            }
+        });
+        const query = params.toString();
+        const newUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+        history.replaceState(null, '', newUrl);
+    };
+
     let objs = {
         dataTable: new DataTable('#transactions-table', {
             serverSide: true,
@@ -11,6 +40,7 @@ let controller = async function() {
                 return: true
             },
             order: [[0, 'desc']],
+            searchCols: searchCols,
             layout: {
                 topStart: 'buttons'
             },
@@ -67,14 +97,7 @@ let controller = async function() {
                     }
                 }
             ],
-            columns: [
-                {data: 'date', title: 'Date'},
-                {data: 'name', title: 'Name'},
-                {data: 'amount', title: 'Amount'},
-                {data: 'account', title: 'Account'},
-                {data: 'category', title: 'Category'},
-                {data: 'tags', title: 'Tags'}
-            ],
+            columns: columnsConfig,
             createdRow: function(row, data, dataIndex) {
                 row.style.cursor = 'pointer';
                 row.addEventListener('click', function() {
@@ -108,11 +131,13 @@ let controller = async function() {
                 })
             },
             initComplete: function() {
-                this.api()
-                    .columns()
+                const dt = this.api();
+
+                dt.columns()
                     .every(function() {
                         let column = this;
                         let title = column.footer().textContent;
+                        let existingValue = column.search();
 
                         let input = document.createElement("input");
                         input.placeholder = title;
@@ -125,6 +150,14 @@ let controller = async function() {
                                     cancelLabel: 'Clear'
                                 }
                             });
+
+                            const bounds = existingValue ? existingValue.split(' - ') : [];
+                            if (bounds.length === 2) {
+                                $(input).val(existingValue);
+                                const picker = $(input).data('daterangepicker');
+                                picker.setStartDate(moment(bounds[0], 'MM/DD/YYYY'));
+                                picker.setEndDate(moment(bounds[1], 'MM/DD/YYYY'));
+                            }
 
                             $(input).on('apply.daterangepicker', function(ev, picker) {
                                 $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
@@ -142,6 +175,10 @@ let controller = async function() {
                             selector.removeAttribute('id');
                             column.footer().replaceChildren(selector);
 
+                            if (existingValue) {
+                                selector.value = existingValue;
+                            }
+
                             selector.addEventListener('change', function(e) {
                                 if (column.search() !== this.value) {
                                     column.search(this.value).draw();
@@ -153,6 +190,10 @@ let controller = async function() {
                             selector.removeAttribute('id');
                             column.footer().replaceChildren(selector);
 
+                            if (existingValue) {
+                                selector.value = existingValue;
+                            }
+
                             selector.addEventListener('change', function(e) {
                                 if (column.search() !== this.value) {
                                     column.search(this.value).draw();
@@ -160,6 +201,10 @@ let controller = async function() {
                             });
                         }
                         else {
+                            if (existingValue) {
+                                input.value = existingValue;
+                            }
+
                             input.addEventListener('keyup', function(e) {
                                 if (e.key === 'Enter') {
                                     if (column.search() !== this.value) {
@@ -168,7 +213,12 @@ let controller = async function() {
                                 }
                             });
                         }
-                    })
+                    });
+
+                dt.on('draw', function() {
+                    updateUrlFromTable(dt);
+                });
+                updateUrlFromTable(dt);
             }
         })
     }
