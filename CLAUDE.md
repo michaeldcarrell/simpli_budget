@@ -34,7 +34,7 @@ python manage.py test api.tests.SomeTestCase.test_something   # single test
 
 There is no configured linter/formatter and no JS build step (static JS is hand-written, served as-is).
 
-Production no longer runs on Heroku — it's built from the repo `Dockerfile` and deployed as a Docker container (`gunicorn simpli_budget.wsgi:application`, entrypoint also runs `collectstatic`) on the home server via Portainer. **This is a Pattern B stack** (Portainer project `budget`) — the repo's `docker-compose.yaml` is *not* the live source of truth; see [`../STACK_TOPOLOGY.md`](../STACK_TOPOLOGY.md) before assuming an edit here will apply on redeploy. The `Procfile` (`gunicorn simpli_budget.wsgi`) is a leftover from the old Heroku deployment and is no longer used.
+Production is built from the repo `Dockerfile` and deployed as a Docker container (`gunicorn simpli_budget.wsgi:application`, entrypoint also runs `collectstatic`) on the home server via Portainer. **This is a Pattern B stack** (Portainer project `budget`) — the repo's `docker-compose.yaml` is *not* the live source of truth; see [`../STACK_TOPOLOGY.md`](../STACK_TOPOLOGY.md) before assuming an edit here will apply on redeploy. The `Procfile` (`gunicorn simpli_budget.wsgi`) is unused legacy cruft — safe to ignore.
 
 Seed demo data (creates/reuses a "Demo Household" group with fake accounts, categories, and a few months of transaction history):
 ```bash
@@ -79,6 +79,6 @@ No JS framework or bundler — each feature has a plain JS file under `static/<f
 
 ### Surrounding infrastructure (outside this repo)
 This app is one piece of a larger personal-infra setup, which matters when reasoning about where data comes from or where a job should live:
-- **A home server** runs this app (via Docker/Portainer, container name `simpli_budget`, project `budget`) alongside the other services in this ecosystem, including Airflow. It used to be hosted on Heroku for uptime/networking convenience, but that's no longer the case — it's local-only now. See [`../STACK_TOPOLOGY.md`](../STACK_TOPOLOGY.md) for the live deployment details (it's a Pattern B stack — the repo's `docker-compose.yaml` is not authoritative).
+- **A home server** runs this app (via Docker/Portainer, container name `simpli_budget`, project `budget`) alongside the other services in this ecosystem, including Airflow — local-only, no external hosting. See [`../STACK_TOPOLOGY.md`](../STACK_TOPOLOGY.md) for the live deployment details (it's a Pattern B stack — the repo's `docker-compose.yaml` is not authoritative).
 - **Google Cloud** hosts the Postgres database this app reads/writes, as a managed database service — not on the home server (see "The database is external and unmanaged" above for why it's external and unmigrated from here). A future migration of the database to the home server is possible but hasn't happened yet.
 - **Airflow on the home server** runs the scheduled jobs that keep data current — e.g. pulling new Plaid transactions into the DB. Those jobs are custom Python scripts living outside this repo, not Django management commands. This repo has no Celery/cron/task-queue infrastructure of its own and isn't expected to grow one; new recurring/background work belongs in an Airflow DAG on the home server, not in this codebase.
