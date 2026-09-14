@@ -45,7 +45,18 @@
         {% for category in section.categories %}
             <li class="row list-group-item" style="display: flex!important;">
                 <div class="col">{{ category.category_name }}</div>
-                <div class="col">{{ category.budget_display }}</div>
+                <div class="col">
+                    <div class="input-group input-group-sm category-amount-group" style="max-width: 160px;">
+                        <span class="input-group-text">$</span>
+                        <input
+                            type="text"
+                            inputmode="decimal"
+                            class="form-control category-amount-input"
+                            data-category-id="{{ category.category_id }}"
+                            value="{{ category.default_monthly_amount|default_if_none:0|floatformat:2 }}"
+                        >
+                    </div>
+                </div>
                 <div class="col-auto">
                     <button
                         type="button"

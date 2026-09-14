@@ -34,9 +34,66 @@ let controller = function() {
         let newPosition = Math.max(input.value.length - cursorFromEnd, 0);
         input.setSelectionRange(newPosition, newPosition);
     }
+    let saveCategoryAmount = function(input) {
+        let raw = input.value.replace(/,/g, '') || '0';
+        let savedRaw = input.dataset.savedValue.replace(/,/g, '');
+        if (raw === savedRaw) {
+            return;
+        }
+
+        let categoryId = input.getAttribute('data-category-id');
+        let token = getCSRFToken();
+        let loader = new Loader();
+        loader.show();
+        fetch(`/api/category/${categoryId}`, {
+            method: 'PUT',
+            headers: {
+                'X-CSRFToken': token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ default_monthly_amount: raw })
+        }).then(async (res) => {
+            return {
+                status_code: res.status,
+                body: await res.json()
+            }
+        }).then(data => {
+            loader.resolve();
+            if (data.status_code !== 200) {
+                alert(data.body.message || 'Failed to update category');
+                input.value = input.dataset.savedValue;
+                return;
+            }
+            input.value = Number(data.body.default_monthly_amount).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            });
+            input.dataset.savedValue = input.value;
+        }).catch(e => {
+            loader.resolve();
+            alert(e.message);
+            input.value = input.dataset.savedValue;
+            throw e;
+        });
+    }
     let inits = function() {
         objs.amountInput.addEventListener('input', function() {
             formatAmountInput(objs.amountInput);
+        });
+
+        Array.from(document.getElementsByClassName('category-amount-input')).forEach(function(input) {
+            input.dataset.savedValue = input.value;
+            input.addEventListener('input', function() {
+                formatAmountInput(input);
+            });
+            input.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    input.blur();
+                }
+            });
+            input.addEventListener('blur', function() {
+                saveCategoryAmount(input);
+            });
         });
 
         let removeModal = new bootstrap.Modal(objs.removeModalEl);
