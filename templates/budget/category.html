@@ -23,8 +23,13 @@
         </div>
         <div class="col-4" style="margin: auto;">
             <select class="transaction-category-selector form-control" transaction_id="{{ transaction.transaction_id }}">
-            {% for category in categories %}
-                <option value="{{ category.category_id }}"{% if category.category_id == transaction.category_id %} selected{% endif %}>{{ category.category_name }}</option>
+            {% regroup categories by category_type as category_groups %}
+            {% for group in category_groups %}
+                <optgroup label="{{ group.grouper.category_type_name }}">
+                {% for category in group.list %}
+                    <option value="{{ category.category_id }}"{% if category.category_id == transaction.category_id %} selected{% endif %}>{{ category.category_name }}</option>
+                {% endfor %}
+                </optgroup>
             {% endfor %}
             </select>
         </div>
