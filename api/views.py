@@ -301,6 +301,21 @@ class CategoryAPI(APIView):
         )
         return Response(data=category.to_dict(), status=status.HTTP_201_CREATED)
 
+    def put(self, request, category_id: int):
+        category = Categories.objects.filter(category_id=category_id).first()
+        if category is None or not category.user_has_access(request.user):
+            return Response(data={'message': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            default_monthly_amount = float(request.data.get('default_monthly_amount'))
+        except (TypeError, ValueError):
+            return Response(data={'message': 'A valid default_monthly_amount is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        category._default_monthly_amount = f"{default_monthly_amount:.2f}"
+        category.updated_at = dt.now(tz=UTC)
+        category.save()
+        return Response(data=category.to_dict(), status=status.HTTP_200_OK)
+
     def delete(self, request, category_id: int):
         category = Categories.objects.filter(category_id=category_id).first()
         if category is None or not category.user_has_access(request.user):
