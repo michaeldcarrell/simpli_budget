@@ -22,14 +22,15 @@
             </a>
         </div>
         <div class="col-4" style="margin: auto;">
-            <select class="transaction-category-selector form-control" transaction_id="{{ transaction.transaction_id }}">
+            <select class="transaction-category-selector selectpicker form-control" transaction_id="{{ transaction.transaction_id }}">
             {% regroup categories by category_type as category_groups %}
             {% for group in category_groups %}
-                <optgroup label="{{ group.grouper.category_type_name }}">
+                {% if not forloop.first %}
+                <option data-divider="true"></option>
+                {% endif %}
                 {% for category in group.list %}
-                    <option value="{{ category.category_id }}"{% if category.category_id == transaction.category_id %} selected{% endif %}>{{ category.category_name }}</option>
+                <option value="{{ category.category_id }}" data-subtext="{{ group.grouper.category_type_name }}"{% if category.category_id == transaction.category_id %} selected{% endif %}>{{ category.category_name }}</option>
                 {% endfor %}
-                </optgroup>
             {% endfor %}
             </select>
         </div>
