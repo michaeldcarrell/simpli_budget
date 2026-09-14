@@ -315,11 +315,11 @@ class CategoryTypeMonth:
 
     def get_month_categories(self, include_hidden: bool) -> list[CategoryMonth]:
         if include_hidden:
-            categories = self.category_type.categories_set.all()
+            categories = self.category_type.categories_set.order_by("sort_index")
         else:
             categories = self.category_type.categories_set.filter(
                 hidden=False
-            )
+            ).order_by("sort_index")
         return [
             CategoryMonth(
                 category=category,
