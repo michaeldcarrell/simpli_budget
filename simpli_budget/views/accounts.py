@@ -19,7 +19,7 @@ class AccountsView(LoginRequiredMixin, View):
         )
         plaid = Plaid()
         context = {
-            'link_token': plaid.get_link_token(),
+            'link_token': plaid.get_link_token().get('token'),
             'accounts': Accounts.objects.filter(
                 group_id=group_id,
                 deleted=False,
