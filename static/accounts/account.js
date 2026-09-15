@@ -1,6 +1,46 @@
 let controller = function() {
     let objs = {
-        linkBtn: document.getElementById('re-auth-btn')
+        linkBtn: document.getElementById('re-auth-btn'),
+        givenNameInput: document.getElementById('given-name')
+    }
+
+    let saveGivenName = function(input) {
+        let value = input.value.trim();
+        if (value === (input.dataset.savedValue || '')) {
+            return;
+        }
+
+        let accountId = input.getAttribute('data-account-id');
+        let token = getCSRFToken();
+        let loader = new Loader();
+        loader.show();
+        fetch(`/api/accounts/${accountId}`, {
+            method: 'PUT',
+            headers: {
+                'X-CSRFToken': token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ given_name: value })
+        }).then(async (res) => {
+            return {
+                status_code: res.status,
+                body: await res.json()
+            }
+        }).then(data => {
+            loader.resolve();
+            if (data.status_code !== 200) {
+                alert(data.body.message || 'Failed to update given name');
+                input.value = input.dataset.savedValue || '';
+                return;
+            }
+            input.dataset.savedValue = data.body.given_name || '';
+            input.value = input.dataset.savedValue;
+        }).catch(e => {
+            loader.resolve();
+            alert(e.message);
+            input.value = input.dataset.savedValue || '';
+            throw e;
+        });
     }
 
     let getLinkToken = function () {
@@ -69,6 +109,16 @@ let controller = function() {
                this.getAttribute('link-token')
             );
            plaidPopout(account.link_token, this.getAttribute('access-token-id'));
+        });
+
+        objs.givenNameInput.dataset.savedValue = objs.givenNameInput.value;
+        objs.givenNameInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                objs.givenNameInput.blur();
+            }
+        });
+        objs.givenNameInput.addEventListener('blur', function() {
+            saveGivenName(objs.givenNameInput);
         });
     }();
 }();
