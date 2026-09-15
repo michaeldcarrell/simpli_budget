@@ -25,7 +25,8 @@ from simpli_budget.models import (
     Categories,
     CategoryMonth,
     TransactionSearch,
-    UserAttributes
+    UserAttributes,
+    NotificationCategories
 )
 from helpers.plaid import Plaid
 from helpers.demo_data import generate_recent_activity
@@ -187,6 +188,34 @@ class OnboardingAPI(APIView):
     def post(self, request):
         UserAttributes.objects.filter(user=request.user).update(onboarding_completed=True)
         return Response(data={'onboarding_completed': True}, status=status.HTTP_200_OK)
+
+
+class UserSettingsAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        discord_user_id = (request.data.get('discord_user_id') or '').strip()
+        UserAttributes.objects.filter(user=request.user).update(discord_user_id=discord_user_id or None)
+        return Response(data={'discord_user_id': discord_user_id or None}, status=status.HTTP_200_OK)
+
+
+class NotificationCategoryAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, category_id: int):
+        category = Categories.objects.filter(category_id=category_id).first()
+        if category is None or not category.user_has_access(request.user):
+            return Response(data={'message': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        user_attributes, _ = UserAttributes.objects.get_or_create(user=request.user)
+        subscribed = bool(request.data.get('subscribed'))
+        if subscribed:
+            NotificationCategories.objects.get_or_create(user_attributes=user_attributes, category=category)
+        else:
+            NotificationCategories.objects.filter(user_attributes=user_attributes, category=category).delete()
+        return Response(data={'category_id': category_id, 'subscribed': subscribed}, status=status.HTTP_200_OK)
 
 
 class RuleSetAPI(APIView):

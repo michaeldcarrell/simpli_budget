@@ -85,6 +85,7 @@ class UserAttributes(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, models.DO_NOTHING, primary_key=True)
     show_hidden = models.BooleanField(default=False)
     onboarding_completed = models.BooleanField(default=False)
+    discord_user_id = models.CharField(max_length=32, blank=True, null=True)
     created_at = models.DateTimeField(default=dt.now)
     updated_at = models.DateTimeField(default=dt.now)
 
@@ -217,6 +218,18 @@ class Categories(models.Model):
 
     def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
         return GroupUser.objects.filter(group_id=self.category_type.group_id, user=user).exists()
+
+
+class NotificationCategories(models.Model):
+    notification_category_id = models.AutoField(primary_key=True)
+    user_attributes = models.ForeignKey(UserAttributes, on_delete=models.CASCADE, db_column='user_id')
+    category = models.ForeignKey(Categories, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        managed = False
+        db_table = 'notification_categories'
+        unique_together = (('user_attributes', 'category'),)
 
 
 class Month:
