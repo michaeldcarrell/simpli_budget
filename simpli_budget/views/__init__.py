@@ -7,6 +7,7 @@ from simpli_budget.views.budget import BudgetCategory, MonthBudget
 from simpli_budget.views.accounts import AccountsView, Account
 from simpli_budget.views.rules import Rules, RuleView
 from simpli_budget.views.tags import Tags
+from simpli_budget.views.settings import Settings
 
 
 class Logout(View):

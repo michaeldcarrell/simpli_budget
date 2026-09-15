@@ -31,6 +31,7 @@ urlpatterns = [
     path("rules", views.Rules.as_view(), name="rules"),
     path("rules/<int:rule_set_id>", views.RuleView.as_view(), name="rule"),
     path("tags", views.Tags.as_view(), name="tags"),
+    path("settings", views.Settings.as_view(), name="settings"),
     path("logout", views.Logout.as_view(), name="logout"),
 ]
 
