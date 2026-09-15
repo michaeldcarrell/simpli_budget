@@ -18,7 +18,16 @@
             value="{{ discord_user_id|default_if_none:'' }}"
         >
         <div class="form-text">
-            Used to mention you in your daily budget notification categories summary on Discord.
+            Used to send you your daily budget notification categories summary as a Discord DM.
+        </div>
+        <div class="form-text">
+            <strong>How to find your Discord User ID:</strong>
+            <ol style="margin-bottom: 0;">
+                <li>In Discord, open Settings &rarr; Advanced, and turn on <strong>Developer Mode</strong>.</li>
+                <li>Right-click (or tap and hold, on mobile) your name or avatar anywhere in Discord.</li>
+                <li>Click <strong>Copy User ID</strong> and paste it into the field above.</li>
+            </ol>
+            It's a long number (e.g. <code>123456789012345678</code>), not your username.
         </div>
     </div>
 </div>
