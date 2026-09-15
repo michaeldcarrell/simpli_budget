@@ -164,6 +164,22 @@ class PlaidNewAccountAPI(APIView):
         return Response(data={'created_count': len(accounts_response['accounts'])}, status=status.HTTP_200_OK)
 
 
+class AccountAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, account_id: str):
+        account = Accounts.objects.filter(account_id=account_id).first()
+        if account is None or not account.user_has_access(request.user):
+            return Response(data={'message': 'Account not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        given_name = (request.data.get('given_name') or '').strip()
+        account.given_name = given_name or None
+        account.updated_at = dt.now(tz=UTC)
+        account.save()
+        return Response(data=account.to_dict(), status=status.HTTP_200_OK)
+
+
 class OnboardingAPI(APIView):
     authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]

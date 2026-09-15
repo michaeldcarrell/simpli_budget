@@ -31,7 +31,7 @@
         </div>
         <div class="row">
             <label for="given-name">Given Name</label>
-            <input type="text" id="given-name" class="form-control" {% if account.given_name is not None %}value="{{ account.given_name }}" {% else %}placeholder="Your Name" {% endif %}>
+            <input type="text" id="given-name" class="form-control" data-account-id="{{ account.account_id }}" {% if account.given_name is not None %}value="{{ account.given_name }}" {% else %}placeholder="Your Name" {% endif %}>
         </div>
     </div>
 {% endblock %}
