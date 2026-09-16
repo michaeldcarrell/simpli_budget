@@ -32,10 +32,29 @@
     </div>
 </div>
 <div class="row" style="margin: 10px 0;">
+    <div class="col-12 col-lg-3">
+        <label for="notification-frequency-days" class="form-label">Notification Frequency</label>
+        <div class="input-group">
+            <input
+                type="number"
+                id="notification-frequency-days"
+                class="form-control"
+                min="1"
+                step="1"
+                value="{{ notification_frequency_days }}"
+            >
+            <span class="input-group-text">day(s) apart</span>
+        </div>
+        <div class="form-text">
+            How many days to wait between Discord summary notifications. Use <code>1</code> for daily.
+        </div>
+    </div>
+</div>
+<div class="row" style="margin: 10px 0;">
     <div class="col">
         <h4>Notification Categories</h4>
         <div class="form-text" style="margin-bottom: 10px;">
-            Pick which categories to include in your daily Discord summary.
+            Pick which categories to include in your Discord summary.
         </div>
     </div>
 </div>

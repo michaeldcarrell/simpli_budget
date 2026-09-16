@@ -86,6 +86,7 @@ class UserAttributes(models.Model):
     show_hidden = models.BooleanField(default=False)
     onboarding_completed = models.BooleanField(default=False)
     discord_user_id = models.CharField(max_length=32, blank=True, null=True)
+    notification_frequency_days = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(default=dt.now)
     updated_at = models.DateTimeField(default=dt.now)
 

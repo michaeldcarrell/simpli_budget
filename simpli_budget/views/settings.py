@@ -40,6 +40,7 @@ class Settings(LoginRequiredMixin, View):
         context = {
             "title": "Settings",
             "discord_user_id": user_attributes.discord_user_id,
+            "notification_frequency_days": user_attributes.notification_frequency_days,
             "sections": sections,
         }
         return render(request, template_name="settings/index.html", context=context)
