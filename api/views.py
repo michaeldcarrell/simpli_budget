@@ -195,9 +195,31 @@ class UserSettingsAPI(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request):
-        discord_user_id = (request.data.get('discord_user_id') or '').strip()
-        UserAttributes.objects.filter(user=request.user).update(discord_user_id=discord_user_id or None)
-        return Response(data={'discord_user_id': discord_user_id or None}, status=status.HTTP_200_OK)
+        updates = {}
+        if 'discord_user_id' in request.data:
+            discord_user_id = (request.data.get('discord_user_id') or '').strip()
+            updates['discord_user_id'] = discord_user_id or None
+        if 'notification_frequency_days' in request.data:
+            try:
+                frequency_days = int(request.data.get('notification_frequency_days'))
+            except (TypeError, ValueError):
+                return Response(data={'message': 'notification_frequency_days must be an integer'}, status=status.HTTP_400_BAD_REQUEST)
+            if frequency_days < 1:
+                return Response(data={'message': 'notification_frequency_days must be at least 1'}, status=status.HTTP_400_BAD_REQUEST)
+            updates['notification_frequency_days'] = frequency_days
+
+        user_attributes, _ = UserAttributes.objects.get_or_create(user=request.user)
+        if updates:
+            UserAttributes.objects.filter(user=request.user).update(**updates)
+            user_attributes.refresh_from_db()
+
+        return Response(
+            data={
+                'discord_user_id': user_attributes.discord_user_id,
+                'notification_frequency_days': user_attributes.notification_frequency_days,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class NotificationCategoryAPI(APIView):
