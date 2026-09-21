@@ -26,8 +26,14 @@
                 id="category"
                 class="form-control selectpicker"
             >
-                {% for category in categories %}
-                    <option value="{{ category.category_id }}" {% if category.category_id == transaction.category_id %}selected{% endif %}>{{ category.category_name }}</option>
+                {% regroup categories by category_type as category_groups %}
+                {% for group in category_groups %}
+                    {% if not forloop.first %}
+                    <option data-divider="true"></option>
+                    {% endif %}
+                    {% for category in group.list %}
+                    <option value="{{ category.category_id }}" data-subtext="{{ group.grouper.category_type_name }}" {% if category.category_id == transaction.category_id %}selected{% endif %}>{{ category.category_name }}</option>
+                    {% endfor %}
                 {% endfor %}
             </select>
         </div>
