@@ -11,8 +11,13 @@
     <div class="hidden">
         <select class="form-control" id="category-template">
             <option value="-999">All</option>
-        {% for category in categories %}
-            <option value="{{ category.category_id }}">{{ category.category_name }}</option>
+        {% regroup categories by category_type as category_groups %}
+        {% for group in category_groups %}
+            <optgroup label="{{ group.grouper.category_type_name }}">
+            {% for category in group.list %}
+                <option value="{{ category.category_id }}">{{ category.category_name }}</option>
+            {% endfor %}
+            </optgroup>
         {% endfor %}
         </select>
         <select class="form-control" id="account-template">
