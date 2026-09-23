@@ -12,6 +12,8 @@ services:
       - CBA_POSTGRES_DB_HOST=${CBA_POSTGRES_DB_HOST}
       - CBA_POSTGRES_DB_USER=${CBA_POSTGRES_DB_USER}
       - DEMO_GROUP_ID=${DEMO_GROUP_ID:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - CHAT_GROUP_IDS=${CHAT_GROUP_IDS:-}
     ports:
       - "8003:8000"
     networks:

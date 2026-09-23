@@ -1,18 +1,12 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
 from django.views import View
-from simpli_budget.models import CategoryType, GroupUser, NotificationCategories, UserAttributes
+from simpli_budget.models import CategoryType, get_user_group, NotificationCategories, UserAttributes
 
 
 class Settings(LoginRequiredMixin, View):
     def get(self, request):
-        group_id = request.GET.get(
-            "group_id",
-            GroupUser.objects.filter(
-                user_id=request.user.id,
-                user_default_group=True
-            ).first().group_id
-        )
+        group_id = get_user_group(request.user, request).group_id
         user_attributes, _ = UserAttributes.objects.get_or_create(user=request.user)
         subscribed_category_ids = set(
             NotificationCategories.objects.filter(

@@ -29,6 +29,12 @@ CBA_POSTGRES_DB_USER = config('CBA_POSTGRES_DB_USER', default='mdc_admin')
 # Left unset outside the demo environment so the endpoint stays disabled everywhere else.
 DEMO_GROUP_ID = config('DEMO_GROUP_ID', default=None, cast=lambda v: int(v) if v else None)
 
+# Budget chat assistant (helpers/chat.py). Only groups listed in CHAT_GROUP_IDS (comma-separated) get the
+# chat panel and API; left empty, the feature is off everywhere.
+ANTHROPIC_API_KEY = config('ANTHROPIC_API_KEY', default='')
+CHAT_GROUP_IDS = config('CHAT_GROUP_IDS', default='', cast=lambda v: {int(g) for g in v.split(',') if g.strip()})
+CHAT_MODEL = config('CHAT_MODEL', default='claude-opus-5')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
@@ -108,6 +114,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "simpli_budget.context_processors.onboarding",
+                "simpli_budget.context_processors.chat",
             ],
         },
     },

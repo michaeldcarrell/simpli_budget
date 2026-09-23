@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.db.models import QuerySet
+from django.http import Http404
 from datetime import datetime as dt, timedelta
 from dateutil.relativedelta import relativedelta
 from pytz import UTC
@@ -51,14 +52,29 @@ class Group(models.Model):
 
 
 def get_user_group(user: settings.AUTH_USER_MODEL, request = None) -> Group:
-    group = GroupUser.objects.filter(user_id=user.id, user_default_group=True).first().group
+    """
+    The group a request acts on: the user's default group, overridden by a `group_id` query param or
+    request-body field. Raises Http404 unless the user is a member of the resolved group, so callers can
+    trust the returned group without re-checking access.
+    """
+    group_id = None
     if request is not None:
-        query_param_group_id = request.GET.get('group_id')
-        if query_param_group_id is not None:
-            group = Group.objects.filter(group_id=query_param_group_id).first()
-        elif type(request) == dict and request.get('data') is not None and 'group_id' in request.data:
-            group = Group.objects.filter(group_id=request.data['group_id']).first()
-    return group
+        group_id = request.GET.get('group_id')
+        data = getattr(request, 'data', None)  # DRF requests only
+        if group_id is None and hasattr(data, 'get'):
+            group_id = data.get('group_id')
+
+    group_users = GroupUser.objects.filter(user_id=user.id).select_related('group')
+    if group_id is None:
+        group_user = group_users.filter(user_default_group=True).first()
+    else:
+        try:
+            group_user = group_users.filter(group_id=int(group_id)).first()
+        except (TypeError, ValueError):
+            group_user = None
+    if group_user is None:
+        raise Http404('Group not found')
+    return group_user.group
 
 
 class GroupUser(models.Model):
