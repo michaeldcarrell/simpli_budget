@@ -14,6 +14,28 @@
     width: min(480px, 100vw);
 }
 
+/* Phones: the chat takes over the whole screen instead of sliding in as a side panel. */
+@media (max-width: 767.98px) {
+    #chat-panel {
+        width: 100vw;
+        /* dvh tracks the visible area, so the input stays above the on-screen keyboard. */
+        height: 100dvh;
+        border-left: none;
+    }
+
+    #chat-panel .offcanvas-header {
+        padding-top: calc(var(--bs-offcanvas-padding-y) + env(safe-area-inset-top));
+    }
+
+    #chat-form {
+        padding-bottom: calc(0.5rem + env(safe-area-inset-bottom)) !important;
+    }
+
+    #chat-open-btn {
+        bottom: calc(20px + env(safe-area-inset-bottom));
+    }
+}
+
 #chat-input {
     resize: none;
 }
