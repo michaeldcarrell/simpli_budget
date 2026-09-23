@@ -1,18 +1,12 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
 from django.views import View
-from simpli_budget.models import TagType, GroupUser
+from simpli_budget.models import TagType, get_user_group
 
 
 class Tags(LoginRequiredMixin, View):
     def get(self, request):
-        group_id = request.GET.get(
-            "group_id",
-            GroupUser.objects.filter(
-                user_id=request.user.id,
-                user_default_group=True
-            ).first().group_id
-        )
+        group_id = get_user_group(request.user, request).group_id
         tag_types = TagType.objects.filter(group_id=group_id).order_by("name")
         sections = [
             {

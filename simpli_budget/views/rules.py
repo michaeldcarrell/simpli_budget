@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.views import View
 from simpli_budget.models import (
     RuleSet,
-    GroupUser,
+    get_user_group,
     Rule,
     Categories,
     RuleMatchType
@@ -12,11 +12,7 @@ from simpli_budget.models import (
 
 class Rules(LoginRequiredMixin, View):
     def get(self, request):
-        user_default_group = GroupUser.objects.filter(
-            user_id=request.user.id,
-            user_default_group=True
-        ).first()
-        group_id = request.GET.get("group_id", user_default_group.group_id)
+        group_id = get_user_group(request.user, request).group_id
         categories = Categories.objects.filter(
             category_type__group_id=group_id,
             category_type__hidden=False,
@@ -36,11 +32,7 @@ class Rules(LoginRequiredMixin, View):
 
 class RuleView(LoginRequiredMixin, View):
     def get(self, request, rule_set_id: int):
-        user_default_group = GroupUser.objects.filter(
-            user_id=request.user.id,
-            user_default_group=True
-        ).first()
-        group_id = request.GET.get("group_id", user_default_group.group_id)
+        group_id = get_user_group(request.user, request).group_id
         rule_set = RuleSet.objects.filter(
             set_id=rule_set_id,
             group_id=group_id

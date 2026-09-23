@@ -23,4 +23,5 @@ urlpatterns = [
     path('tag', TagAPI.as_view(), name='Tag'),
     path('tag/<int:tag_id>', TagAPI.as_view(), name='Tag Delete'),
     path('demo/generate_activity', DemoGenerateActivityAPI.as_view(), name='Demo Generate Activity'),
+    path('chat', ChatAPI.as_view(), name='Chat'),
 ]

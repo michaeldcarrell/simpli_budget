@@ -1,6 +1,10 @@
+import json
+import logging
 import math
 
+import anthropic
 from django.conf import settings
+from django.http import StreamingHttpResponse
 from django.db import transaction as db_transaction
 from django.db.models import Max
 from rest_framework import status
@@ -30,6 +34,9 @@ from simpli_budget.models import (
 )
 from helpers.plaid import Plaid
 from helpers.demo_data import generate_recent_activity
+from helpers.chat import chat_allowed, clean_chat_history, stream_chat, ToolInputError
+
+logger = logging.getLogger(__name__)
 
 
 AI_CATEGORIZATION_TAG_TYPE_NAME = 'System'
@@ -244,27 +251,41 @@ class RuleSetAPI(APIView):
     authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]
 
+    @staticmethod
+    def __group_category(category_id, group_id: int):
+        """The category, only if it's a live category belonging to the rule set's group."""
+        try:
+            category_id = int(category_id)
+        except (TypeError, ValueError):
+            return None
+        return Categories.objects.filter(
+            category_id=category_id,
+            category_type__group_id=group_id,
+            deleted=False,
+        ).first()
+
     def post(self, request):
         rule_set_name = request.data['name']
-        category_id = request.data['category_id']
-        user_default_group = GroupUser.objects.filter(
-            user_id=request.user.id,
-            user_default_group=True
-        ).first()
-        group_id = request.data.get("group_id", user_default_group.group_id)
+        group = get_user_group(request.user, request)
+        category = self.__group_category(request.data.get('category_id'), group.group_id)
+        if category is None:
+            return Response(data={'message': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
         rule_set = RuleSet.objects.create(
             name=rule_set_name,
-            group_id=group_id,
-            default_category_id=category_id
+            group=group,
+            default_category=category
         )
         rule_set.save()
         return Response(data=rule_set.to_dict(), status=status.HTTP_201_CREATED)
 
     def put(self, request, rule_set_id: int):
-        rule_set = RuleSet.objects.get(set_id=rule_set_id)
-        if not rule_set.user_has_access(request.user):
+        rule_set = RuleSet.objects.filter(set_id=rule_set_id).first()
+        if rule_set is None or not rule_set.user_has_access(request.user):
             return Response(data={'message': 'Rule set not found'}, status=status.HTTP_404_NOT_FOUND)
-        rule_set.default_category_id = request.data['category_id']
+        category = self.__group_category(request.data.get('category_id'), rule_set.group_id)
+        if category is None:
+            return Response(data={'message': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
+        rule_set.default_category = category
         rule_set.save()
         return Response(data=rule_set.to_dict(), status=status.HTTP_200_OK)
 
@@ -504,9 +525,7 @@ class TransactionsAPI(APIView):
         ordering = f'{ordering_direction}{ordering_column}'
 
         if filters is None:
-            filters = {
-                'transactiontag': 'is not None'
-            }
+            filters = {}
         filters['group_id'] = get_user_group(request.user, request).group_id
         offset = (page_number - 1) * page_size
         page_end = offset + page_size
@@ -616,3 +635,29 @@ class DemoGenerateActivityAPI(APIView):
         return Response(data={'created_count': len(transactions)}, status=status.HTTP_200_OK)
 
 
+class ChatAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        group = get_user_group(request.user, request)
+        if not chat_allowed(request.user, group):
+            return Response(data={'message': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            messages = clean_chat_history(request.data.get('messages'))
+        except ToolInputError as e:
+            return Response(data={'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        def ndjson():
+            try:
+                for event in stream_chat(group, messages):
+                    yield json.dumps(event) + '\n'
+            except anthropic.APIError:
+                logger.exception('Chat request to Claude failed')
+                yield json.dumps({'type': 'error', 'text': 'The assistant is unavailable right now. Please try again.'}) + '\n'
+
+        response = StreamingHttpResponse(ndjson(), content_type='application/x-ndjson')
+        # Stop Nginx Proxy Manager from buffering the stream so text shows up as it's generated.
+        response['X-Accel-Buffering'] = 'no'
+        response['Cache-Control'] = 'no-cache'
+        return response

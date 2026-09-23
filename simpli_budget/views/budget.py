@@ -2,18 +2,14 @@ from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
 from django.views import View
-from simpli_budget.models import CategoryMonth, Categories, CategoryType, UserAttributes, BudgetMonth, Month, GroupUser
+from simpli_budget.models import CategoryMonth, Categories, CategoryType, UserAttributes, BudgetMonth, Month, get_user_group
 from datetime import datetime as dt
 
 class BudgetCategory(LoginRequiredMixin, View):
     def get(self, request, category_id: int):
         current_year_month = f"{dt.now().year}{dt.now().month:02}"
         month = request.GET.get("month", current_year_month)
-        user_default_group = GroupUser.objects.filter(
-            user_id=request.user.id,
-            user_default_group=True
-        ).first()
-        group_id = request.GET.get("group_id", user_default_group.group_id)
+        group_id = get_user_group(request.user, request).group_id
         category = Categories.objects.get(category_id=category_id)
         if not category.user_has_access(request.user):
             return render(
@@ -53,13 +49,7 @@ class MonthBudget(LoginRequiredMixin, View):
     def get(self, request):
         current_year_month = int(f"{dt.now().year}{dt.now().month:02}")
         year_month = request.GET.get("month", current_year_month)
-        group_id = request.GET.get(
-            "group_id",
-            GroupUser.objects.filter(
-                user_id=request.user.id,
-                user_default_group=True
-            ).first().group_id
-        )
+        group_id = get_user_group(request.user, request).group_id
 
         category_types = CategoryType.objects.filter(group_id=group_id).order_by("sort_index")
         attributes = UserAttributes.objects.filter(user_id=request.user.id).first()
