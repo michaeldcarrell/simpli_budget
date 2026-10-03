@@ -650,7 +650,7 @@ class ChatAPI(APIView):
 
         def ndjson():
             try:
-                for event in stream_chat(group, messages):
+                for event in stream_chat(group, messages, request.data.get('page')):
                     yield json.dumps(event) + '\n'
             except anthropic.APIError:
                 logger.exception('Chat request to Claude failed')
