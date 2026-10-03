@@ -88,7 +88,11 @@ let chatController = function() {
                     'X-CSRFToken': getCSRFToken(),
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({messages: history})
+                // Lets the assistant read "this month"/"this category" as whatever page is open.
+                body: JSON.stringify({
+                    messages: history,
+                    page: {path: window.location.pathname, month: getQueryParamValue('month') || null},
+                })
             });
             if (!res.ok) {
                 let data = await res.json().catch(() => ({}));
