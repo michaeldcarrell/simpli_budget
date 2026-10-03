@@ -8,6 +8,20 @@
     </div>
 </div>
 <div class="row" style="margin: 10px 0;">
+    <div class="col">
+        <label for="budgeted-income">Budgeted Income</label>
+        <input type="text" id="budgeted-income" class="form-control" disabled>
+    </div>
+    <div class="col">
+        <label for="budgeted-expenses">Budgeted Expenses</label>
+        <input type="text" id="budgeted-expenses" class="form-control" disabled>
+    </div>
+    <div class="col">
+        <label for="budgeted-remaining">Remaining</label>
+        <input type="text" id="budgeted-remaining" class="form-control" disabled>
+    </div>
+</div>
+<div class="row" style="margin: 10px 0;">
     <div class="col-12 col-lg-8">
         <form id="new-category-form" class="row g-2 align-items-end">
             <div class="col-12 col-md-4">
@@ -53,9 +67,19 @@
                             inputmode="decimal"
                             class="form-control category-amount-input"
                             data-category-id="{{ category.category_id }}"
+                            data-income="{% if section.category_type.invert_amounts %}true{% else %}false{% endif %}"
                             value="{{ category.default_monthly_amount|default_if_none:0|floatformat:2 }}"
                         >
                     </div>
+                </div>
+                <div class="col small text-body-secondary category-average">
+                    {% if category.monthly_average is None %}
+                        <span title="No complete months of history yet">{{ average_months }}-mo avg: &mdash;</span>
+                    {% else %}
+                        <span title="Average monthly total over the last {{ category.average_months }} complete month{{ category.average_months|pluralize }}">
+                            {{ average_months }}-mo avg: {% if category.monthly_average < 0 %}-{% endif %}${{ category.monthly_average|floatformat:"2g"|cut:"-" }}{% if category.average_months < average_months %} ({{ category.average_months }} mo){% endif %}
+                        </span>
+                    {% endif %}
                 </div>
                 <div class="col-auto">
                     <button

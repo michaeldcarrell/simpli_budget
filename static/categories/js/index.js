@@ -13,6 +13,9 @@ let controller = function() {
         newGroupNameInput: document.getElementById('new-category-type-name'),
         newGroupErrorBox: document.getElementById('new-category-type-error'),
         confirmCreateGroupBtn: document.getElementById('confirm-create-category-type-btn'),
+        budgetedIncome: document.getElementById('budgeted-income'),
+        budgetedExpenses: document.getElementById('budgeted-expenses'),
+        budgetedRemaining: document.getElementById('budgeted-remaining'),
     }
     let state = {
         pendingCategoryId: null,
@@ -33,6 +36,30 @@ let controller = function() {
 
         let newPosition = Math.max(input.value.length - cursorFromEnd, 0);
         input.setSelectionRange(newPosition, newPosition);
+    }
+    let formatMoney = function(value) {
+        let formatted = Math.abs(value).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+        return `${value < 0 ? '-' : ''}$${formatted}`;
+    }
+    let updateTotals = function() {
+        let income = 0;
+        let expenses = 0;
+        Array.from(document.getElementsByClassName('category-amount-input')).forEach(function(input) {
+            let amount = Number(input.value.replace(/,/g, '')) || 0;
+            if (input.dataset.income === 'true') {
+                income += amount;
+            } else {
+                expenses += amount;
+            }
+        });
+        let remaining = income - expenses;
+        objs.budgetedIncome.value = formatMoney(income);
+        objs.budgetedExpenses.value = formatMoney(expenses);
+        objs.budgetedRemaining.value = formatMoney(remaining);
+        objs.budgetedRemaining.classList.toggle('text-danger', remaining < 0);
     }
     let saveCategoryAmount = function(input) {
         let raw = input.value.replace(/,/g, '') || '0';
@@ -62,6 +89,7 @@ let controller = function() {
             if (data.status_code !== 200) {
                 alert(data.body.message || 'Failed to update category');
                 input.value = input.dataset.savedValue;
+                updateTotals();
                 return;
             }
             input.value = Number(data.body.default_monthly_amount).toLocaleString('en-US', {
@@ -69,10 +97,12 @@ let controller = function() {
                 maximumFractionDigits: 2,
             });
             input.dataset.savedValue = input.value;
+            updateTotals();
         }).catch(e => {
             loader.resolve();
             alert(e.message);
             input.value = input.dataset.savedValue;
+            updateTotals();
             throw e;
         });
     }
@@ -85,6 +115,7 @@ let controller = function() {
             input.dataset.savedValue = input.value;
             input.addEventListener('input', function() {
                 formatAmountInput(input);
+                updateTotals();
             });
             input.addEventListener('keydown', function(event) {
                 if (event.key === 'Enter') {
@@ -95,6 +126,7 @@ let controller = function() {
                 saveCategoryAmount(input);
             });
         });
+        updateTotals();
 
         let removeModal = new bootstrap.Modal(objs.removeModalEl);
         let createGroupModal = new bootstrap.Modal(objs.createGroupModalEl);
