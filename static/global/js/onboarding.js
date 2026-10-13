@@ -19,10 +19,10 @@ let onboardingController = function() {
         },
         {
             page: '/',
-            selector: 'a.list-group-item[href*="/budget/category/"]',
+            selector: '.category-month-row',
             placement: 'top',
             title: 'Your categories',
-            body: 'Each row is a budget category for the month. Click one to see its transactions and how it compares to what you budgeted.'
+            body: 'Each row is a budget category for the month. Click one to see its transactions, or edit the Budgeted amount to change what you budgeted for just this month.'
         },
         {
             page: '/transactions/search',

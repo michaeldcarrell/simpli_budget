@@ -70,17 +70,29 @@
         {{ section.category_type.category_type_name }}
         <ul class="list-group">
         {% for category_month in section.categories %}
-            <a class="row list-group-item" style="display: flex!important;" href="/budget/category/{{ category_month.category.category_id }}?month={{ category_month.month.year_month }}">
-                <div class="col">
+            <div class="row list-group-item category-month-row align-items-center" style="display: flex!important;">
+                <a class="col category-month-link" href="/budget/category/{{ category_month.category.category_id }}?month={{ category_month.month.year_month }}">
                     {{ category_month.category.category_name }}
+                </a>
+                <a class="col category-month-link" href="/budget/category/{{ category_month.category.category_id }}?month={{ category_month.month.year_month }}">
+                    {{ category_month.month_total_display }}
+                </a>
+                <div class="col">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">$</span>
+                        <input
+                            type="text"
+                            inputmode="decimal"
+                            class="form-control category-month-amount{% if category_month.is_override %} category-month-override{% endif %}"
+                            aria-label="Budgeted for {{ category_month.category.category_name }}"
+                            title="{% if category_month.is_override %}Set for this month only. Clear to go back to the category default.{% else %}Using the category default{% endif %}"
+                            data-category-id="{{ category_month.category.category_id }}"
+                            data-year-month="{{ category_month.month.year_month }}"
+                            value="{{ category_month.amount|floatformat:2 }}"
+                        >
+                    </div>
                 </div>
-            <div class="col">
-                {{ category_month.month_total_display }}
             </div>
-            <div class="col">
-                {{ category_month.display_amount }}
-            </div>
-            </a>
         {% endfor %}
         </ul>
     </li>
@@ -88,5 +100,6 @@
 </ul>
 {% endblock %}
 {% block scripts %}
+    <script src="{% static "budget/classes/CategoryMonth.js" %}"></script>
     <script src="{% static "budget/js/month_overview.js" %}"></script>
 {% endblock %}
