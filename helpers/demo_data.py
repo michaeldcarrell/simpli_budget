@@ -221,7 +221,7 @@ def _ensure_category_month(category: Categories, year_month: int, amount: float)
     CategoryMonth.objects.get_or_create(
         category=category,
         year_month=year_month,
-        defaults={"amount": f"{amount:.2f}"},
+        defaults={"_amount": f"{amount:.2f}"},
     )
 
 

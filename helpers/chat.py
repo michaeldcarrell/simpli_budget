@@ -309,7 +309,7 @@ class BudgetTools:
             for category_id, amount in CategoryMonth.objects.filter(
                 category__category_type__group_id=self.group_id,
                 year_month=year_month,
-            ).values_list('category_id', 'amount')
+            ).values_list('category_id', '_amount')
         }
 
         category_types = []
