@@ -8,6 +8,39 @@
 <div class="container">
     <h3 style="margin-top: 10px;">{{ category_month.category.category_name }}</h3>
     <h5>{{ category_month.month_total_display }}</h5>
+    <div class="row g-2 align-items-center">
+        <div class="col-auto">
+            <label for="category-month-amount" class="col-form-label">Budgeted for {{ category_month.month.name_short }}</label>
+        </div>
+        <div class="col-auto">
+            <div class="input-group input-group-sm" style="max-width: 160px;">
+                <span class="input-group-text">$</span>
+                <input
+                    type="text"
+                    inputmode="decimal"
+                    id="category-month-amount"
+                    class="form-control"
+                    data-year-month="{{ category_month.year_month }}"
+                    value="{{ category_month.amount|floatformat:2 }}"
+                >
+            </div>
+        </div>
+        <div class="col-auto">
+            <button
+                type="button"
+                id="category-month-reset"
+                class="btn btn-sm btn-outline-secondary{% if not category_month.is_override %} d-none{% endif %}"
+            >
+                Reset to default ({{ category_month.category.budget_display }})
+            </button>
+            <span
+                id="category-month-default-note"
+                class="small text-body-secondary{% if category_month.is_override %} d-none{% endif %}"
+            >
+                Using the category default
+            </span>
+        </div>
+    </div>
     <hr/>
 {% for transaction in category_month.transactions %}
     <div class="row row-card category-month-transaction" style="margin-top: 5px;">

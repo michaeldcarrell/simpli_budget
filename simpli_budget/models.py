@@ -275,10 +275,15 @@ class Month:
 
 
 class CategoryMonth(models.Model):
+    """
+    A per-month override of a category's budgeted amount. A row only exists for months the user has
+    explicitly changed; every other month falls back to the category's `default_monthly_amount`.
+    Use `CategoryMonth(category=..., year_month=...).get()` to resolve a month whether or not it has a row.
+    """
     category_month_id = models.AutoField(primary_key=True)
     category = models.ForeignKey(Categories, on_delete=models.CASCADE)
     year_month = models.IntegerField(null=False)
-    amount = models.TextField() # This is intentionally left as nullable, so we can still use CategoryMonth in python while it is not in the database
+    _amount = models.TextField(blank=True, null=True, db_column='amount')
     created_at = models.DateTimeField(null=False, auto_now_add=True)
     updated_at = models.DateTimeField(null=False, auto_now=True)
 
@@ -303,38 +308,46 @@ class CategoryMonth(models.Model):
         return money_display(self.month_total)
 
     @property
+    def is_override(self) -> bool:
+        return self._amount is not None
+
+    @property
+    def amount(self) -> float:
+        """The budgeted amount for this month: the month's override if one is set, else the category default."""
+        if self.is_override:
+            return money_as_float(self._amount)
+        return self.category.default_monthly_amount or 0
+
+    @property
     def display_amount(self):
-        amount = 0
-        if self.amount:
-            amount = self.amount
-        elif self.category.default_monthly_amount:
-            amount = self.category.default_monthly_amount
-        return money_display(field=amount)
+        return money_display(field=self.amount)
 
     def get(self):
         record = CategoryMonth.objects.filter(
             category_id=self.category_id,
             year_month=self.year_month,
         ).first()
-        if record is None:
-            record = self
-            record.amount = self.category.default_monthly_amount
-        return record
+        return self if record is None else record
 
     def to_dict(self) -> dict:
         return {
             'category_month_id': self.category_month_id,
             'category': self.category.to_dict(),
             'year_month': self.year_month,
-            'amount': money_as_float(self.amount),
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
+            'amount': self.amount,
+            'display_amount': self.display_amount,
+            'is_override': self.is_override,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
 
     class Meta:
         managed = False
         db_table = '"budget"."category_month"'
         unique_together = (('category', 'year_month'),)
+
+    def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
+        return self.category.user_has_access(user)
 
 
 class CategoryTypeMonth:

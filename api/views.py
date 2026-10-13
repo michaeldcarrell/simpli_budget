@@ -483,22 +483,89 @@ class TagAPI(APIView):
 
 
 class CategoryMonthAPI(APIView):
+    """
+    The budgeted amount for one category in one month. GET resolves it (falling back to the category's
+    default when the month has no override, or when no month is given), POST sets a month-specific
+    override, and DELETE removes the override so the month uses the default again.
+    """
     authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]
 
+    @staticmethod
+    def __invalid_year_month():
+        return Response(data={'message': 'A valid year_month (YYYYMM) is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    @staticmethod
+    def __get_category(request, category_id: int):
+        category = Categories.objects.filter(category_id=category_id).first()
+        if category is None or not category.user_has_access(request.user):
+            return None
+        return category
+
+    @staticmethod
+    def __get_year_month(request):
+        """The requested YYYYMM as an int, or None if it wasn't given. Raises ValueError if it isn't a real month."""
+        year_month = request.data.get('year_month') or request.query_params.get('year_month')
+        if year_month is None:
+            return None
+        try:
+            year_month = int(year_month)
+        except TypeError:
+            raise ValueError('year_month must be an integer')
+        if not (100001 <= year_month <= 999912 and 1 <= year_month % 100 <= 12):
+            raise ValueError('year_month must be in YYYYMM form')
+        return year_month
+
+    def get(self, request, category_id: int):
+        category = self.__get_category(request, category_id)
+        if category is None:
+            return Response(data={'message': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            year_month = self.__get_year_month(request)
+        except ValueError:
+            return self.__invalid_year_month()
+
+        category_month = CategoryMonth(category=category, year_month=year_month)
+        if year_month is not None:
+            category_month = category_month.get()
+        return Response(data=category_month.to_dict(), status=status.HTTP_200_OK)
+
     def post(self, request, category_id: int):
-        month_id = request.data['year_month']
-        category_month = CategoryMonth.objects.filter(
-            category_id=category_id,
-            year_month=month_id
-        ).first()
-        if category_month is None:
-            category_month = CategoryMonth.objects.create(
-                category_id=category_id,
-                year_month=month_id,
-            )
-        category_month.amount = int(request.data['amount'])
+        category = self.__get_category(request, category_id)
+        if category is None:
+            return Response(data={'message': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            year_month = self.__get_year_month(request)
+        except ValueError:
+            year_month = None
+        if year_month is None:
+            return self.__invalid_year_month()
+
+        try:
+            amount = float(request.data.get('amount'))
+        except (TypeError, ValueError):
+            amount = math.nan
+        if not math.isfinite(amount):
+            return Response(data={'message': 'A valid amount is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        category_month = CategoryMonth(category=category, year_month=year_month).get()
+        category_month._amount = f"{amount:.2f}"
         category_month.save()
+        return Response(data=category_month.to_dict(), status=status.HTTP_200_OK)
+
+    def delete(self, request, category_id: int):
+        category = self.__get_category(request, category_id)
+        if category is None:
+            return Response(data={'message': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            year_month = self.__get_year_month(request)
+        except ValueError:
+            year_month = None
+        if year_month is None:
+            return self.__invalid_year_month()
+
+        CategoryMonth.objects.filter(category=category, year_month=year_month).delete()
+        category_month = CategoryMonth(category=category, year_month=year_month)
         return Response(data=category_month.to_dict(), status=status.HTTP_200_OK)
 
 
