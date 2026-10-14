@@ -70,7 +70,7 @@ class Transaction(LoginRequiredMixin, View):
                     id='account',
                     label='Account',
                     type='text',
-                    value=transaction.account.given_name,
+                    value=transaction.account.display_name,
                     disabled=True
                 ),
                 Input(
