@@ -18,7 +18,7 @@
             value="{{ discord_user_id|default_if_none:'' }}"
         >
         <div class="form-text">
-            Used to send you your daily budget notification categories summary as a Discord DM.
+            Used to send you your budget notification categories summary as a Discord DM. Leave blank to turn Discord notifications off.
         </div>
         <div class="form-text">
             <strong>How to find your Discord User ID:</strong>
@@ -28,6 +28,21 @@
                 <li>Click <strong>Copy User ID</strong> and paste it into the field above.</li>
             </ol>
             It's a long number (e.g. <code>123456789012345678</code>), not your username.
+        </div>
+    </div>
+</div>
+<div class="row" style="margin: 10px 0;">
+    <div class="col-12 col-lg-6">
+        <label for="notification-email" class="form-label">Notification Email</label>
+        <input
+            type="email"
+            id="notification-email"
+            class="form-control"
+            placeholder="e.g. {{ user.email|default:'you@example.com' }}"
+            value="{{ notification_email|default_if_none:'' }}"
+        >
+        <div class="form-text">
+            Used to send you your budget notification categories summary by email. Leave blank to turn email notifications off.
         </div>
     </div>
 </div>
@@ -46,7 +61,7 @@
             <span class="input-group-text">day(s) apart</span>
         </div>
         <div class="form-text">
-            How many days to wait between Discord summary notifications. Use <code>1</code> for daily.
+            How many days to wait between summary notifications. Use <code>1</code> for daily.
         </div>
     </div>
 </div>
@@ -54,7 +69,7 @@
     <div class="col">
         <h4>Notification Categories</h4>
         <div class="form-text" style="margin-bottom: 10px;">
-            Pick which categories to include in your Discord summary.
+            Pick which categories to include in your summary.
         </div>
     </div>
 </div>

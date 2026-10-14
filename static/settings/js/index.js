@@ -1,11 +1,12 @@
 let controller = function() {
     let objs = {
         discordIdInput: document.getElementById('discord-user-id'),
+        notificationEmailInput: document.getElementById('notification-email'),
         notificationFrequencyInput: document.getElementById('notification-frequency-days'),
         notificationToggles: document.getElementsByClassName('notification-category-toggle'),
     }
 
-    let saveDiscordUserId = function(input) {
+    let saveTextSetting = function(input, field, label) {
         let value = input.value.trim();
         if (value === (input.dataset.savedValue || '')) {
             return;
@@ -20,7 +21,7 @@ let controller = function() {
                 'X-CSRFToken': token,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ discord_user_id: value })
+            body: JSON.stringify({ [field]: value })
         }).then(async (res) => {
             return {
                 status_code: res.status,
@@ -29,11 +30,11 @@ let controller = function() {
         }).then(data => {
             loader.resolve();
             if (data.status_code !== 200) {
-                alert(data.body.message || 'Failed to update Discord User ID');
+                alert(data.body.message || `Failed to update ${label}`);
                 input.value = input.dataset.savedValue || '';
                 return;
             }
-            input.dataset.savedValue = data.body.discord_user_id || '';
+            input.dataset.savedValue = data.body[field] || '';
             input.value = input.dataset.savedValue;
         }).catch(e => {
             loader.resolve();
@@ -126,7 +127,17 @@ let controller = function() {
             }
         });
         objs.discordIdInput.addEventListener('blur', function() {
-            saveDiscordUserId(objs.discordIdInput);
+            saveTextSetting(objs.discordIdInput, 'discord_user_id', 'Discord User ID');
+        });
+
+        objs.notificationEmailInput.dataset.savedValue = objs.notificationEmailInput.value;
+        objs.notificationEmailInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                objs.notificationEmailInput.blur();
+            }
+        });
+        objs.notificationEmailInput.addEventListener('blur', function() {
+            saveTextSetting(objs.notificationEmailInput, 'notification_email', 'Notification Email');
         });
 
         objs.notificationFrequencyInput.dataset.savedValue = objs.notificationFrequencyInput.value;
