@@ -43,6 +43,8 @@ ACCOUNT_PROFILES = {
 #                budget is split evenly across those occurrences.
 #   "variable" - occurs a random number of times per month (groceries, restaurants); the
 #                budget is split unevenly across however many occurrences land that month.
+# The Airflow DAG that keeps the demo current day to day (simpli_budget_demo_activity) keeps its own
+# copy of the schedules/merchants in airflow/classes/budget/demo_activity.py - change both together.
 CATEGORY_TYPE_PROFILES = [
     {
         "name": "Income",
