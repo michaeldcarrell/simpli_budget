@@ -412,6 +412,25 @@ body {
     margin: 10px auto 0 auto;
 }
 
+/* Bottom sheets: full width on phones, a centred panel on wider screens. */
+.app-sheet {
+    border-radius: 16px 16px 0 0;
+    height: auto !important;
+    max-height: 92dvh;
+}
+
+.app-sheet .offcanvas-body {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 768px) {
+    .app-sheet {
+        left: calc(50% - 260px) !important;
+        right: auto !important;
+        width: 520px;
+    }
+}
+
 .offcanvas-backdrop.show {
     opacity: 1;
     background: var(--sb-scrim);
@@ -468,4 +487,187 @@ body {
 .theme-toggle[data-theme="dark"] .theme-icon-dark,
 .theme-toggle[data-theme="light"] .theme-icon-light {
     display: none;
+}
+
+/* Large money input and radio cards used in edit sheets. */
+.budget-amount-field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 60px;
+    padding: 0 14px;
+    border: 1px solid var(--sb-accent);
+    border-radius: 8px;
+    background: var(--sb-bg);
+    font-size: 22px;
+    color: var(--sb-muted);
+}
+
+.budget-amount-field input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--sb-ink);
+    font-size: 26px;
+    font-weight: 600;
+}
+
+.choice-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 52px;
+    padding: 8px 14px;
+    border: 1px solid var(--sb-line);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.choice-card input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--sb-accent);
+    flex: none;
+}
+
+.choice-card:has(input:checked) {
+    border-color: var(--sb-accent);
+    background: var(--sb-accent-soft);
+}
+
+/* A titled group of ledger rows (budget, categories, transactions). */
+.ledger-section {
+    margin-top: 24px;
+}
+
+.ledger-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--sb-line);
+}
+
+.min-w-0 {
+    min-width: 0;
+}
+
+/* Detail pages: a back link above a sans title (names can be long, so not the mono page title). */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 44px;
+    color: var(--sb-muted);
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.back-link:hover {
+    color: var(--sb-ink);
+}
+
+.detail-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+/* bootstrap-select's button and menu follow the theme. */
+.bootstrap-select .dropdown-toggle {
+    background: var(--sb-surface);
+    border-color: var(--sb-line);
+    color: var(--sb-ink);
+}
+
+.bootstrap-select .dropdown-menu li a span.text-muted,
+.bootstrap-select .dropdown-menu .text-muted {
+    color: var(--sb-muted) !important;
+}
+
+.bootstrap-select .dropdown-menu li.selected a,
+.bootstrap-select .dropdown-menu li a.active {
+    background: var(--sb-accent);
+    color: var(--sb-accent-ink);
+}
+
+/* Label/value pairs on detail pages. */
+.detail-list {
+    margin: 0;
+    border-top: 1px solid var(--sb-line);
+}
+
+.detail-list > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--sb-line-soft);
+}
+
+.detail-list dt {
+    font-weight: 400;
+    color: var(--sb-muted);
+    font-size: 14px;
+}
+
+.detail-list dd {
+    margin: 0;
+    text-align: right;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+
+/* A simple name + action row (tags, rules, accounts). */
+.list-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 56px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--sb-line-soft);
+    color: var(--sb-ink);
+    text-decoration: none;
+}
+
+a.list-row:hover {
+    background: var(--sb-surface-2);
+    color: var(--sb-ink);
+}
+
+.list-row-name {
+    font-size: 15px;
+    font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.list-row-meta {
+    font-size: 12px;
+    color: var(--sb-muted);
+}
+
+.icon-button-quiet {
+    border-color: transparent;
+    background: transparent;
+    color: var(--sb-muted);
+}
+
+.icon-button-quiet:hover {
+    color: var(--sb-over);
+    border-color: var(--sb-line);
+}
+
+.form-switch .form-check-input {
+    width: 2.6em;
+    height: 1.4em;
+    cursor: pointer;
 }

@@ -23,6 +23,15 @@ let controller = function() {
     }
 
     let init = function() {
+        // "Back" returns to wherever the user came from in the app (search results, a category, ...).
+        let back = document.getElementById('transaction-back');
+        if (back && document.referrer.startsWith(window.location.origin)) {
+            back.addEventListener('click', function(event) {
+                event.preventDefault();
+                history.back();
+            });
+        }
+
         objs.categorySelector.addEventListener('change', function() {
             updateTransaction()
         });

@@ -26,28 +26,28 @@ let onboardingController = function() {
         },
         {
             page: '/transactions/search',
-            selector: '.dt-buttons',
+            selector: '#tx-search-form',
             placement: 'bottom',
             title: 'Search & export',
-            body: 'Filter using the boxes at the bottom of each column (date, name, account, category, tags), then use Export to download everything matching your filters — not just what’s on screen.'
+            body: 'Search by name, use the chips or Filters to narrow by date, category, account, or tag, then use Export to download everything matching your filters — not just what’s on screen.'
         },
         {
             page: '/categories',
-            selector: '#new-category-form',
+            selector: '#add-category-btn',
             placement: 'bottom',
             title: 'Create categories',
-            body: 'Add a new category here, choose which group it belongs to, and set a monthly budget amount.'
+            body: 'Add a new category here, choose which group it belongs to, and set a monthly budget amount. Tap any category to change its default budget or remove it.'
         },
         {
             page: '/tags',
-            selector: '#new-tag-form',
+            selector: '#add-tag-btn',
             placement: 'bottom',
             title: 'Create tags',
             body: 'Tags label transactions across categories, e.g. for a specific trip or shared project.'
         },
         {
             page: '/rules',
-            selector: '#new-rule',
+            selector: '#add-rule-btn',
             placement: 'bottom',
             title: 'Automate categorization',
             body: 'Create a rule to automatically assign a category to future transactions that match checks you define.'

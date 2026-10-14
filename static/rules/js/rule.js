@@ -11,7 +11,15 @@ let controller = function() {
         return parseInt(path[path.length - 1]);
     }
 
+    let syncValueType = function() {
+        let selectedMatchType = objs.matchType.options[objs.matchType.selectedIndex];
+        let valueType = selectedMatchType ? selectedMatchType.getAttribute('data-value-type') : null;
+        objs.newCheckValue.type = valueType === 'numeric' ? 'number' : 'text';
+    }
+
     let inits = function() {
+        // The first type is preselected now (it used to be a blank picker), so match its value type up front.
+        syncValueType();
         objs.matchType.addEventListener('change', function() {
             let selectedMatchType = this.options[this.selectedIndex];
             let valueType = selectedMatchType.getAttribute('data-value-type');

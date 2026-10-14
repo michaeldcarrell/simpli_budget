@@ -2,30 +2,28 @@
 {% load static %}
 {% block title %}{{ title }}{% endblock %}
 {% block body %}
-    <div class="container" style="margin-top: 20px;">
-        {% for input in inputs %}
-            {{ input.get_html|safe }}
-        {% endfor %}
-        <div class="row">
-            <label for="tags">Tags</label>
-            <select id="tags" class="form-control selectpicker" title="No tags" multiple>
-            {% for tag in transaction_tags %}
-                <option
-                    value="{{ tag.tag_id }}"
-                    data-content="<span class='badge text-bg-primary'>{{ tag.name }}</span>"
-                    {% if tag.transaction_tag_id is not None %}selected{% endif %}
-                >
-                    {{ tag.name }}
-                </option>
-            {% endfor %}
-            </select>
+<div class="page-narrow">
+    <a href="/transactions/search" class="back-link" id="transaction-back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+        Back
+    </a>
+
+    <p class="num mt-3 mb-1 {% if is_inflow %}text-primary{% endif %}" style="font-size: 34px; font-weight: 600; letter-spacing: -0.5px;">{{ amount_display }}</p>
+    <h1 class="detail-title">{{ transaction.name }}</h1>
+
+    <dl class="detail-list mt-3">
+        {% for label, value in details %}
+        <div>
+            <dt>{{ label }}</dt>
+            <dd>{{ value }}</dd>
         </div>
-        <div class="row">
-            <label for="category">Category</label>
-            <select
-                id="category"
-                class="form-control selectpicker"
-            >
+        {% endfor %}
+    </dl>
+
+    <div class="d-flex flex-column gap-3 mt-4">
+        <div>
+            <label for="category" class="stat-label d-block mb-1">Category</label>
+            <select id="category" class="form-control selectpicker" data-width="100%" data-live-search="true">
                 {% regroup categories by category_type as category_groups %}
                 {% for group in category_groups %}
                     {% if not forloop.first %}
@@ -37,7 +35,22 @@
                 {% endfor %}
             </select>
         </div>
+        <div>
+            <label for="tags" class="stat-label d-block mb-1">Tags</label>
+            <select id="tags" class="form-control selectpicker" data-width="100%" title="No tags" multiple>
+            {% for tag in transaction_tags %}
+                <option
+                    value="{{ tag.tag_id }}"
+                    data-content="<span class='badge text-bg-primary'>{{ tag.name }}</span>"
+                    {% if tag.transaction_tag_id is not None %}selected{% endif %}
+                >
+                    {{ tag.name }}
+                </option>
+            {% endfor %}
+            </select>
+        </div>
     </div>
+</div>
 {% endblock %}
 {% block scripts %}
     <script src="{% static 'transaction/js/classes/Transaction.js' %}"></script>

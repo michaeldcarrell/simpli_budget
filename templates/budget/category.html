@@ -2,44 +2,65 @@
 {% load static %}
 {% block title %}{{ title }}{% endblock %}
 {% block styles %}
-    <link href="{% static '/budget/css/category.css' %}" rel="stylesheet">
+    <link href="{% static 'budget/css/category.css' %}" rel="stylesheet">
 {% endblock %}
 {% block body %}
-<div class="container" id="category-month" data-year-month="{{ category_month.year_month }}">
-    <h3 style="margin-top: 10px;">{{ category_month.category.category_name }}</h3>
-    <h5>{{ category_month.month_total_display }}</h5>
-    <hr/>
-{% for transaction in category_month.transactions %}
-    <div class="row row-card category-month-transaction" style="margin-top: 5px;">
-        <div class="col-8">
-            <a href="/transaction/{{ transaction.transaction_id }}"
-               style="width: 100%; text-decoration: none; cursor: pointer; color: black;">
-                <div class="card-body">
-                    <h5 class="card-title">{{ transaction.name }}</h5>
-                    <h6 class="card-subtitle mb-2 text-body-secondary">{{ transaction.date.date }}</h6>
-                    <h5 class="card-text">{{ transaction.display_amount }}</h5>
-                </div>
-            </a>
+<div class="page-narrow" id="category-month" data-year-month="{{ category_month.year_month }}">
+    <a href="/?month={{ category_month.year_month }}" class="back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+        Budget
+    </a>
+    <p class="eyebrow mt-3 mb-1">{{ month_label }}</p>
+    <h1 class="detail-title">{{ category_month.category.category_name }}</h1>
+
+    <section class="stat-strip mt-3" aria-label="Category summary">
+        <div>
+            <span class="stat-label">{% if is_income %}Received{% else %}Spent{% endif %}</span>
+            <span class="stat-value {% if left_is_over %}text-over{% endif %}">{{ spent_display }}</span>
         </div>
-        <div class="col-4" style="margin: auto;">
-            <select class="transaction-category-selector selectpicker form-control" transaction_id="{{ transaction.transaction_id }}">
-            {% regroup categories by category_type as category_groups %}
-            {% for group in category_groups %}
-                {% if not forloop.first %}
-                <option data-divider="true"></option>
-                {% endif %}
-                {% for category in group.list %}
-                <option value="{{ category.category_id }}" data-subtext="{{ group.grouper.category_type_name }}"{% if category.category_id == transaction.category_id %} selected{% endif %}>{{ category.category_name }}</option>
+        <div>
+            <span class="stat-label">Budgeted</span>
+            <span class="stat-value">{{ budgeted_display }}</span>
+        </div>
+        <div>
+            <span class="stat-label">{{ left_label }}</span>
+            <span class="stat-value {% if left_is_over %}text-over{% else %}text-primary{% endif %}">{{ left_display }}</span>
+        </div>
+    </section>
+
+    <section class="ledger-section">
+        <div class="ledger-section-header">
+            <h2 class="eyebrow m-0">Transactions</h2>
+            <span class="num small text-body-secondary">{{ category_month.transactions|length }}</span>
+        </div>
+    {% for transaction in category_month.transactions %}
+        <div class="category-tx category-month-transaction">
+            <a class="category-tx-name" href="/transaction/{{ transaction.transaction_id }}">{{ transaction.name }}</a>
+            <span class="category-tx-amount num">{{ transaction.display_amount|cut:"$" }}</span>
+            <span class="category-tx-date">{{ transaction.date.date|date:"D M j" }} &middot; {{ transaction.account.display_name }}</span>
+            <div class="category-tx-select">
+                <label class="visually-hidden" for="category-select-{{ transaction.transaction_id }}">Category for {{ transaction.name }}</label>
+                <select id="category-select-{{ transaction.transaction_id }}" class="transaction-category-selector selectpicker form-control" data-width="100%" data-style="btn-sm btn-outline-secondary" data-live-search="true" transaction_id="{{ transaction.transaction_id }}">
+                {% regroup categories by category_type as category_groups %}
+                {% for group in category_groups %}
+                    {% if not forloop.first %}
+                    <option data-divider="true"></option>
+                    {% endif %}
+                    {% for category in group.list %}
+                    <option value="{{ category.category_id }}" data-subtext="{{ group.grouper.category_type_name }}"{% if category.category_id == transaction.category_id %} selected{% endif %}>{{ category.category_name }}</option>
+                    {% endfor %}
                 {% endfor %}
-            {% endfor %}
-            </select>
+                </select>
+            </div>
         </div>
-    </div>
-{% endfor %}
+    {% empty %}
+        <p class="text-body-secondary text-center py-5 mb-0">No transactions in this category this month.</p>
+    {% endfor %}
+    </section>
 </div>
 {% endblock %}
 {% block scripts %}
     <script src="{% static 'transaction/js/classes/Transaction.js' %}"></script>
-    <script src="{%  static 'budget/classes/CategoryMonth.js' %}"></script>
+    <script src="{% static 'budget/classes/CategoryMonth.js' %}"></script>
     <script src="{% static 'budget/js/category.js' %}"></script>
 {% endblock %}
