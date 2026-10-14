@@ -1,0 +1,29 @@
+.notification-help {
+    padding: 0 0 0 4px;
+    line-height: 1;
+    vertical-align: baseline;
+    color: var(--bs-secondary-color);
+}
+
+.notification-help:hover,
+.notification-help:focus-visible {
+    color: var(--bs-primary);
+}
+
+.notification-help-tooltip {
+    --bs-tooltip-max-width: 320px;
+    --bs-tooltip-font-size: 0.875rem;
+}
+
+.notification-help-tooltip .tooltip-inner {
+    text-align: left;
+}
+
+.notification-help-tooltip ol {
+    margin: 4px 0;
+    padding-left: 18px;
+}
+
+.notification-help-tooltip code {
+    color: inherit;
+}

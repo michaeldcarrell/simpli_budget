@@ -151,7 +151,28 @@ let controller = function() {
         });
     }
 
+    let initHelpTooltips = function() {
+        // Touch screens can't hover, and iOS Safari doesn't focus buttons on tap, so
+        // there the info icons open on tap and close on the next tap anywhere.
+        let touchOnly = window.matchMedia('(hover: none)').matches;
+        let helpButtons = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        helpButtons.forEach(function(el) {
+            new bootstrap.Tooltip(el, { trigger: touchOnly ? 'click' : 'hover focus' });
+        });
+        if (touchOnly) {
+            document.addEventListener('click', function(event) {
+                helpButtons.forEach(function(el) {
+                    if (!el.contains(event.target)) {
+                        bootstrap.Tooltip.getInstance(el).hide();
+                    }
+                });
+            });
+        }
+    }
+
     let inits = function() {
+        initHelpTooltips();
+
         objs.discordIdInput.dataset.savedValue = objs.discordIdInput.value;
         objs.discordIdInput.addEventListener('keydown', function(event) {
             if (event.key === 'Enter') {
