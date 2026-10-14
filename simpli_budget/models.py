@@ -51,6 +51,15 @@ class Group(models.Model):
         return GroupUser.objects.filter(group=self, user=user).exists()
 
 
+def is_demo_user(user) -> bool:
+    """The shared, read-only account behind the public demo link (settings.DEMO_USERNAME)."""
+    return (
+        settings.DEMO_GROUP_ID is not None
+        and user.is_authenticated
+        and user.username == settings.DEMO_USERNAME
+    )
+
+
 def get_user_group(user: settings.AUTH_USER_MODEL, request = None) -> Group:
     """
     The group a request acts on: the user's default group, overridden by a `group_id` query param or

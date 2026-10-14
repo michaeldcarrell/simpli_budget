@@ -1,0 +1,17 @@
+{% extends "_layout.html" %}
+{% block title %}{% if signed_out %}Signed out{% else %}Welcome{% endif %}{% endblock %}
+{% block body %}
+<div class="page-narrow text-center py-5">
+    <h1 class="detail-title">{% if signed_out %}You're signed out{% else %}Simpli Budget{% endif %}</h1>
+    <p class="text-body-secondary mt-2">
+        A monthly budget that keeps itself current: bank transactions sync in automatically and land in the right category.
+    </p>
+    <div class="d-grid gap-2 mt-4 mx-auto" style="max-width: 320px;">
+        <a href="{{ google_login_url }}" class="btn btn-primary">Sign in with Google</a>
+        {% if demo_enabled %}
+        <a href="/demo" class="btn btn-outline-secondary">Try the demo</a>
+        <p class="small text-body-secondary mt-1 mb-0">No account needed. Look around a sample household's budget.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

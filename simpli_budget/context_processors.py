@@ -2,7 +2,7 @@ from django.conf import settings
 from django.http import Http404
 
 from helpers.chat import chat_allowed
-from simpli_budget.models import UserAttributes, get_user_group
+from simpli_budget.models import UserAttributes, get_user_group, is_demo_user
 
 
 THEMES = ('dark', 'light')
@@ -12,6 +12,14 @@ DEFAULT_THEME = 'dark'
 def user_preferences(request):
     if not request.user.is_authenticated:
         return {'theme': DEFAULT_THEME}
+    if is_demo_user(request.user):
+        # Shared demo account: preferences live in each visitor's session (see api/views.py: UserSettingsAPI).
+        theme = request.session.get('theme')
+        return {
+            'demo_read_only': True,
+            'onboarding_completed': request.session.get('onboarding_completed', False),
+            'theme': theme if theme in THEMES else DEFAULT_THEME,
+        }
     attributes = UserAttributes.objects.filter(user=request.user).first()
     return {
         'onboarding_completed': attributes.onboarding_completed if attributes else False,
@@ -44,8 +52,6 @@ NAV_SECTIONS = (
 
 def navigation(request):
     """Which main nav item the current page belongs to, for highlighting it."""
-    if request.path == '/':
-        return {'nav_section': 'budget'}
     for prefix, section in NAV_SECTIONS:
         if request.path.startswith(prefix):
             return {'nav_section': section}
