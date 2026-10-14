@@ -1,11 +1,17 @@
 let controller = function() {
     let objs = {
         form: document.getElementById('new-category-form'),
+        addSheet: document.getElementById('add-category-sheet'),
         typeSelect: document.getElementById('new-category-type'),
         nameInput: document.getElementById('new-category-name'),
         amountInput: document.getElementById('new-category-amount'),
         errorBox: document.getElementById('new-category-error'),
-        deleteButtons: document.getElementsByClassName('delete-category-btn'),
+        editSheet: document.getElementById('edit-category-sheet'),
+        editForm: document.getElementById('edit-category-form'),
+        editTitle: document.getElementById('edit-category-title'),
+        editAmount: document.getElementById('edit-category-amount'),
+        editAverage: document.getElementById('edit-category-average'),
+        removeButton: document.getElementById('remove-category-btn'),
         removeModalEl: document.getElementById('remove-category-modal'),
         removeCategoryName: document.getElementById('remove-category-name'),
         confirmRemoveBtn: document.getElementById('confirm-remove-category-btn'),
@@ -13,13 +19,10 @@ let controller = function() {
         newGroupNameInput: document.getElementById('new-category-type-name'),
         newGroupErrorBox: document.getElementById('new-category-type-error'),
         confirmCreateGroupBtn: document.getElementById('confirm-create-category-type-btn'),
-        budgetedIncome: document.getElementById('budgeted-income'),
-        budgetedExpenses: document.getElementById('budgeted-expenses'),
-        budgetedRemaining: document.getElementById('budgeted-remaining'),
     }
-    let state = {
-        pendingCategoryId: null,
-    }
+    // The row that opened the edit sheet; its data-* attributes describe the category.
+    let activeRow = null;
+
     let formatAmountInput = function(input) {
         let cursorFromEnd = input.value.length - input.selectionStart;
         let raw = input.value.replace(/[^\d.]/g, '');
@@ -37,99 +40,79 @@ let controller = function() {
         let newPosition = Math.max(input.value.length - cursorFromEnd, 0);
         input.setSelectionRange(newPosition, newPosition);
     }
-    let formatMoney = function(value) {
-        let formatted = Math.abs(value).toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
-        return `${value < 0 ? '-' : ''}$${formatted}`;
-    }
-    let updateTotals = function() {
-        let income = 0;
-        let expenses = 0;
-        Array.from(document.getElementsByClassName('category-amount-input')).forEach(function(input) {
-            let amount = Number(input.value.replace(/,/g, '')) || 0;
-            if (input.dataset.income === 'true') {
-                income += amount;
-            } else {
-                expenses += amount;
-            }
-        });
-        let remaining = income - expenses;
-        objs.budgetedIncome.value = formatMoney(income);
-        objs.budgetedExpenses.value = formatMoney(expenses);
-        objs.budgetedRemaining.value = formatMoney(remaining);
-        objs.budgetedRemaining.classList.toggle('text-danger', remaining < 0);
-    }
-    let saveCategoryAmount = function(input) {
-        let raw = input.value.replace(/,/g, '') || '0';
-        let savedRaw = input.dataset.savedValue.replace(/,/g, '');
-        if (raw === savedRaw) {
-            return;
-        }
 
-        let categoryId = input.getAttribute('data-category-id');
-        let token = getCSRFToken();
+    let request = function(method, url, body, okStatuses) {
         let loader = new Loader();
         loader.show();
-        fetch(`/api/category/${categoryId}`, {
-            method: 'PUT',
+        return fetch(url, {
+            method: method,
             headers: {
-                'X-CSRFToken': token,
+                'X-CSRFToken': getCSRFToken(),
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ default_monthly_amount: raw })
+            body: body ? JSON.stringify(body) : undefined
         }).then(async (res) => {
-            return {
-                status_code: res.status,
-                body: await res.json()
+            let data = await res.json();
+            if (!okStatuses.includes(res.status)) {
+                throw new Error(data.message || 'Something went wrong');
             }
-        }).then(data => {
+            return data;
+        }).finally(() => {
             loader.resolve();
-            if (data.status_code !== 200) {
-                alert(data.body.message || 'Failed to update category');
-                input.value = input.dataset.savedValue;
-                updateTotals();
-                return;
-            }
-            input.value = Number(data.body.default_monthly_amount).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-            });
-            input.dataset.savedValue = input.value;
-            updateTotals();
-        }).catch(e => {
-            loader.resolve();
-            alert(e.message);
-            input.value = input.dataset.savedValue;
-            updateTotals();
-            throw e;
         });
     }
-    let inits = function() {
-        objs.amountInput.addEventListener('input', function() {
-            formatAmountInput(objs.amountInput);
-        });
 
-        Array.from(document.getElementsByClassName('category-amount-input')).forEach(function(input) {
-            input.dataset.savedValue = input.value;
+    let fillEditSheet = function(row) {
+        activeRow = row;
+        objs.editTitle.textContent = row.dataset.name;
+        objs.editAmount.value = Number(row.dataset.amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        objs.editAverage.textContent = row.dataset.average
+            ? `${row.dataset.averageMonths}-month average: ${row.dataset.average}`
+            : 'No complete months of history yet.';
+    }
+
+    let inits = function() {
+        [objs.amountInput, objs.editAmount].forEach(function(input) {
             input.addEventListener('input', function() {
                 formatAmountInput(input);
-                updateTotals();
-            });
-            input.addEventListener('keydown', function(event) {
-                if (event.key === 'Enter') {
-                    input.blur();
-                }
-            });
-            input.addEventListener('blur', function() {
-                saveCategoryAmount(input);
             });
         });
-        updateTotals();
+
+        objs.editSheet.addEventListener('show.bs.offcanvas', function(event) {
+            if (event.relatedTarget) {
+                fillEditSheet(event.relatedTarget);
+            }
+        });
+        objs.editSheet.addEventListener('shown.bs.offcanvas', function() {
+            objs.editAmount.select();
+        });
+        objs.addSheet.addEventListener('shown.bs.offcanvas', function() {
+            objs.nameInput.focus();
+        });
+
+        objs.editForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            let raw = objs.editAmount.value.replace(/,/g, '') || '0';
+            request('PUT', `/api/category/${activeRow.dataset.categoryId}`, {default_monthly_amount: raw}, [200])
+                .then(() => window.location.reload())
+                .catch(e => alert(e.message));
+        });
 
         let removeModal = new bootstrap.Modal(objs.removeModalEl);
         let createGroupModal = new bootstrap.Modal(objs.createGroupModalEl);
+
+        objs.removeButton.addEventListener('click', function() {
+            objs.removeCategoryName.textContent = activeRow.dataset.name;
+            bootstrap.Offcanvas.getOrCreateInstance(objs.editSheet).hide();
+            removeModal.show();
+        });
+
+        objs.confirmRemoveBtn.addEventListener('click', function() {
+            removeModal.hide();
+            request('DELETE', `/api/category/${activeRow.dataset.categoryId}`, null, [200])
+                .then(() => window.location.reload())
+                .catch(e => alert(e.message));
+        });
 
         objs.typeSelect.addEventListener('change', function() {
             if (objs.typeSelect.value !== '__create_group__') {
@@ -138,121 +121,40 @@ let controller = function() {
             objs.typeSelect.value = objs.typeSelect.options[0].value;
             objs.newGroupNameInput.value = '';
             objs.newGroupErrorBox.classList.add('hidden');
+            // A sheet and a modal both trap focus, so swap one for the other rather than stacking them.
+            bootstrap.Offcanvas.getOrCreateInstance(objs.addSheet).hide();
             createGroupModal.show();
+        });
+        objs.createGroupModalEl.addEventListener('shown.bs.modal', function() {
+            objs.newGroupNameInput.focus();
+        });
+        objs.createGroupModalEl.addEventListener('hidden.bs.modal', function() {
+            bootstrap.Offcanvas.getOrCreateInstance(objs.addSheet).show();
         });
 
         objs.confirmCreateGroupBtn.addEventListener('click', function() {
             objs.newGroupErrorBox.classList.add('hidden');
-
-            let token = getCSRFToken();
-            let loader = new Loader();
-            loader.show();
-            fetch('/api/category_type', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': token,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    category_type_name: objs.newGroupNameInput.value,
-                })
-            }).then(async (res) => {
-                return {
-                    status_code: res.status,
-                    body: await res.json()
-                }
-            }).then(data => {
-                if (data.status_code !== 201) {
-                    loader.resolve();
-                    objs.newGroupErrorBox.textContent = data.body.message || 'Failed to create group';
+            request('POST', '/api/category_type', {category_type_name: objs.newGroupNameInput.value}, [201])
+                .then(() => window.location.reload())
+                .catch(e => {
+                    objs.newGroupErrorBox.textContent = e.message || 'Failed to create group';
                     objs.newGroupErrorBox.classList.remove('hidden');
-                    return;
-                }
-                window.location.reload();
-            }).catch(e => {
-                loader.resolve();
-                objs.newGroupErrorBox.textContent = e.message;
-                objs.newGroupErrorBox.classList.remove('hidden');
-                throw e;
-            });
-        });
-
-        Array.from(objs.deleteButtons).forEach(function(button) {
-            button.addEventListener('click', function() {
-                state.pendingCategoryId = button.getAttribute('data-category-id');
-                objs.removeCategoryName.textContent = button.getAttribute('data-category-name');
-                removeModal.show();
-            });
-        });
-
-        objs.confirmRemoveBtn.addEventListener('click', function() {
-            removeModal.hide();
-
-            let token = getCSRFToken();
-            let loader = new Loader();
-            loader.show();
-            fetch(`/api/category/${state.pendingCategoryId}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRFToken': token,
-                    'Content-Type': 'application/json'
-                }
-            }).then(async (res) => {
-                return {
-                    status_code: res.status,
-                    body: await res.json()
-                }
-            }).then(data => {
-                if (data.status_code !== 200) {
-                    loader.resolve();
-                    alert(data.body.message || 'Failed to remove category');
-                    return;
-                }
-                window.location.reload();
-            }).catch(e => {
-                loader.resolve();
-                alert(e.message);
-                throw e;
-            });
+                });
         });
 
         objs.form.addEventListener('submit', function(event) {
             event.preventDefault();
             objs.errorBox.classList.add('hidden');
-
-            let token = getCSRFToken();
-            let loader = new Loader();
-            loader.show();
-            fetch('/api/category', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': token,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    category_type_id: parseInt(objs.typeSelect.value),
-                    category_name: objs.nameInput.value,
-                    default_monthly_amount: objs.amountInput.value.replace(/,/g, '') || 0,
-                })
-            }).then(async (res) => {
-                return {
-                    status_code: res.status,
-                    body: await res.json()
-                }
-            }).then(data => {
-                if (data.status_code !== 201 && data.status_code !== 200) {
-                    loader.resolve();
-                    objs.errorBox.textContent = data.body.message || 'Failed to create category';
+            request('POST', '/api/category', {
+                category_type_id: parseInt(objs.typeSelect.value),
+                category_name: objs.nameInput.value,
+                default_monthly_amount: objs.amountInput.value.replace(/,/g, '') || 0,
+            }, [200, 201])
+                .then(() => window.location.reload())
+                .catch(e => {
+                    objs.errorBox.textContent = e.message || 'Failed to create category';
                     objs.errorBox.classList.remove('hidden');
-                    return;
-                }
-                window.location.reload();
-            }).catch(e => {
-                loader.resolve();
-                objs.errorBox.textContent = e.message;
-                objs.errorBox.classList.remove('hidden');
-                throw e;
-            });
+                });
         });
     }();
 }();

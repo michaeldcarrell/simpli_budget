@@ -1,135 +1,166 @@
 {% extends "_layout.html" %}
 {% load static %}
 {% block title %}{{ title }}{% endblock %}
+{% block styles %}
+    <link rel="stylesheet" href="{% static "categories/css/index.css" %}">
+{% endblock %}
 {% block body %}
-<div class="row" style="margin: 10px 0;">
-    <div class="col">
-        <h2>Categories</h2>
+<div class="page-narrow">
+    <div class="d-flex align-items-end justify-content-between gap-3">
+        <div class="min-w-0">
+            <h1 class="page-title">Categories</h1>
+            <p class="page-subtitle">Default monthly budgets &middot; tap one to edit</p>
+        </div>
+        <button id="add-category-btn" type="button" class="btn btn-primary num d-flex align-items-center gap-2" style="height: 44px;" data-bs-toggle="offcanvas" data-bs-target="#add-category-sheet" aria-controls="add-category-sheet">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+            CATEGORY
+        </button>
+    </div>
+
+    <section class="stat-strip mt-3" aria-label="Budget totals">
+        <div>
+            <span class="stat-label">Income</span>
+            <span class="stat-value">{{ budgeted_income|floatformat:"2g" }}</span>
+        </div>
+        <div>
+            <span class="stat-label">Expenses</span>
+            <span class="stat-value">{{ budgeted_expenses|floatformat:"2g" }}</span>
+        </div>
+        <div>
+            <span class="stat-label">Unassigned</span>
+            <span class="stat-value {% if unassigned < 0 %}text-over{% else %}text-primary{% endif %}">{{ unassigned|floatformat:"2g" }}</span>
+        </div>
+    </section>
+
+    {% for section in sections %}
+    <section class="ledger-section">
+        <div class="ledger-section-header">
+            <h2 class="eyebrow m-0">{{ section.category_type.category_type_name }}</h2>
+            <span class="num small text-body-secondary">{{ section.total|floatformat:"2g" }}</span>
+        </div>
+        {% for category in section.categories %}
+        <button
+            type="button"
+            class="category-row"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#edit-category-sheet"
+            data-category-id="{{ category.category_id }}"
+            data-name="{{ category.category_name }}"
+            data-amount="{{ category.default_monthly_amount|default_if_none:0|floatformat:2 }}"
+            data-average="{% if category.monthly_average is not None %}{{ category.monthly_average|floatformat:'2g' }}{% endif %}"
+            data-average-months="{{ category.average_months }}"
+        >
+            <span class="category-name">{{ category.category_name }}</span>
+            <span class="category-budget num">{{ category.default_monthly_amount|default_if_none:0|floatformat:"2g" }}</span>
+            <svg class="category-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
+            <span class="category-average">
+                {% if category.monthly_average is None %}
+                    {{ average_months }}-mo avg <span class="num">&mdash;</span>
+                {% else %}
+                    {{ average_months }}-mo avg <span class="num {% if category.average_over_budget %}text-over{% endif %}">{{ category.monthly_average|floatformat:"2g" }}</span>{% if category.average_months < average_months %} <span class="small">({{ category.average_months }} mo)</span>{% endif %}
+                {% endif %}
+            </span>
+            <span class="category-hint num text-over">{% if category.average_over_budget %}avg over{% endif %}</span>
+        </button>
+        {% endfor %}
+    </section>
+    {% endfor %}
+</div>
+
+<div class="offcanvas offcanvas-bottom app-sheet" tabindex="-1" id="edit-category-sheet" aria-labelledby="edit-category-title">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="offcanvas-header pb-0 align-items-start">
+        <div>
+            <h2 class="offcanvas-title fs-5 fw-semibold" id="edit-category-title">Category</h2>
+            <p class="small text-body-secondary mb-0">Default monthly budget</p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form id="edit-category-form" class="d-flex flex-column gap-3" novalidate>
+            <div>
+                <label for="edit-category-amount" class="stat-label d-block mb-1">Amount</label>
+                <div class="budget-amount-field">
+                    <span class="num" aria-hidden="true">$</span>
+                    <input id="edit-category-amount" type="text" inputmode="decimal" class="num" autocomplete="off">
+                </div>
+                <p id="edit-category-average" class="small text-body-secondary mt-2 mb-0"></p>
+            </div>
+            <p class="small text-body-secondary mb-0">Months with their own amount (set from the Budget page) keep it.</p>
+            <div class="d-grid gap-2" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                <button id="remove-category-btn" type="button" class="btn btn-outline-secondary text-over">Remove</button>
+                <button type="submit" class="btn btn-primary num">SAVE</button>
+            </div>
+        </form>
     </div>
 </div>
-<div class="row" style="margin: 10px 0;">
-    <div class="col">
-        <label for="budgeted-income">Budgeted Income</label>
-        <input type="text" id="budgeted-income" class="form-control" disabled>
+
+<div class="offcanvas offcanvas-bottom app-sheet" tabindex="-1" id="add-category-sheet" aria-labelledby="add-category-title">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="offcanvas-header pb-0">
+        <h2 class="offcanvas-title fs-5 fw-semibold" id="add-category-title">New category</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
-    <div class="col">
-        <label for="budgeted-expenses">Budgeted Expenses</label>
-        <input type="text" id="budgeted-expenses" class="form-control" disabled>
-    </div>
-    <div class="col">
-        <label for="budgeted-remaining">Remaining</label>
-        <input type="text" id="budgeted-remaining" class="form-control" disabled>
-    </div>
-</div>
-<div class="row" style="margin: 10px 0;">
-    <div class="col-12 col-lg-8">
-        <form id="new-category-form" class="row g-2 align-items-end">
-            <div class="col-12 col-md-4">
-                <label for="new-category-type" class="form-label">Category Type</label>
+    <div class="offcanvas-body">
+        <form id="new-category-form" class="d-flex flex-column gap-3">
+            <div>
+                <label for="new-category-type" class="stat-label d-block mb-1">Group</label>
                 <select id="new-category-type" class="form-select">
                     {% for category_type in category_types %}
                     <option value="{{ category_type.category_type_id }}">{{ category_type.category_type_name }}</option>
                     {% endfor %}
-                    <option value="__create_group__">+ Create Group</option>
+                    <option value="__create_group__">+ Create group</option>
                 </select>
             </div>
-            <div class="col-12 col-md-4">
-                <label for="new-category-name" class="form-label">Name</label>
+            <div>
+                <label for="new-category-name" class="stat-label d-block mb-1">Name</label>
                 <input type="text" id="new-category-name" class="form-control" placeholder="e.g. Groceries" required>
             </div>
-            <div class="col-8 col-md-3">
-                <label for="new-category-amount" class="form-label">Monthly Budget</label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="text" inputmode="decimal" id="new-category-amount" class="form-control" value="0">
+            <div>
+                <label for="new-category-amount" class="stat-label d-block mb-1">Monthly budget</label>
+                <div class="budget-amount-field">
+                    <span class="num" aria-hidden="true">$</span>
+                    <input type="text" inputmode="decimal" id="new-category-amount" class="num" value="0" autocomplete="off">
                 </div>
             </div>
-            <div class="col-4 col-md-1">
-                <button type="submit" class="btn btn-primary">Add</button>
-            </div>
+            <div id="new-category-error" class="text-over small hidden"></div>
+            <button type="submit" class="btn btn-primary num" style="height: 48px;">ADD CATEGORY</button>
         </form>
-        <div id="new-category-error" class="text-danger hidden" style="margin-top: 5px;"></div>
     </div>
 </div>
-<ul class="list-group">
-{% for section in sections %}
-    <li class="list-group-item">
-        {{ section.category_type.category_type_name }}
-        <ul class="list-group">
-        {% for category in section.categories %}
-            <li class="row list-group-item" style="display: flex!important;">
-                <div class="col">{{ category.category_name }}</div>
-                <div class="col">
-                    <div class="input-group input-group-sm category-amount-group" style="max-width: 160px;">
-                        <span class="input-group-text">$</span>
-                        <input
-                            type="text"
-                            inputmode="decimal"
-                            class="form-control category-amount-input"
-                            data-category-id="{{ category.category_id }}"
-                            data-income="{% if section.category_type.invert_amounts %}true{% else %}false{% endif %}"
-                            value="{{ category.default_monthly_amount|default_if_none:0|floatformat:2 }}"
-                        >
-                    </div>
-                </div>
-                <div class="col small text-body-secondary category-average">
-                    {% if category.monthly_average is None %}
-                        <span title="No complete months of history yet">{{ average_months }}-mo avg: &mdash;</span>
-                    {% else %}
-                        <span title="Average monthly total over the last {{ category.average_months }} complete month{{ category.average_months|pluralize }}">
-                            {{ average_months }}-mo avg: {% if category.monthly_average < 0 %}-{% endif %}${{ category.monthly_average|floatformat:"2g"|cut:"-" }}{% if category.average_months < average_months %} ({{ category.average_months }} mo){% endif %}
-                        </span>
-                    {% endif %}
-                </div>
-                <div class="col-auto">
-                    <button
-                        type="button"
-                        class="btn btn-sm btn-outline-danger delete-category-btn"
-                        data-category-id="{{ category.category_id }}"
-                        data-category-name="{{ category.category_name }}"
-                    >
-                        Remove
-                    </button>
-                </div>
-            </li>
-        {% endfor %}
-        </ul>
-    </li>
-{% endfor %}
-</ul>
 
-<div class="modal fade" id="remove-category-modal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+<div class="modal fade" id="remove-category-modal" tabindex="-1" aria-labelledby="remove-category-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Remove Category</h5>
+                <h2 class="modal-title fs-5" id="remove-category-modal-title">Remove category</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 Remove <strong id="remove-category-name"></strong>? Past transactions will keep it, but it will no longer be selectable.
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" id="confirm-remove-category-btn" class="btn btn-danger">Remove</button>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="create-category-type-modal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+<div class="modal fade" id="create-category-type-modal" tabindex="-1" aria-labelledby="create-category-type-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Create Category Group</h5>
+                <h2 class="modal-title fs-5" id="create-category-type-modal-title">Create category group</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <label for="new-category-type-name" class="form-label">Group Name</label>
+                <label for="new-category-type-name" class="form-label">Group name</label>
                 <input type="text" id="new-category-type-name" class="form-control">
-                <div id="new-category-type-error" class="text-danger hidden" style="margin-top: 5px;"></div>
+                <div id="new-category-type-error" class="text-over small hidden mt-2"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" id="confirm-create-category-type-btn" class="btn btn-primary">Create</button>
             </div>
         </div>

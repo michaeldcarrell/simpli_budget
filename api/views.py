@@ -618,7 +618,7 @@ class TransactionsAPI(APIView):
                 .order_by(ordering)
         )
 
-        total_records = len(group_query_set)
+        total_records = group_query_set.count()
 
         max_page = math.ceil(total_records / page_size)
         has_next_page = max_page > page_number

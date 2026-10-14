@@ -1,36 +1,51 @@
 {% extends "_layout.html" %}
 {% load static %}
-{% block title %}My Accounts - Simplibudget{% endblock %}
+{% block title %}Accounts{% endblock %}
 {% block scripts %}
     <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
     <script src="{% static "accounts/index.js" %}"></script>
 {% endblock %}
 
 {% block body %}
-<div class="row" style="margin-top: 20px;">
-    <div class="col text-end">
+<div class="page-narrow">
+    <div class="d-flex align-items-end justify-content-between gap-3">
+        <div class="min-w-0">
+            <h1 class="page-title">Accounts</h1>
+            <p class="page-subtitle">Bank accounts linked through Plaid</p>
+        </div>
         <button
             id="add-account-btn"
             type="button"
-            class="btn btn-primary"
+            class="btn btn-primary num d-flex align-items-center gap-2"
+            style="height: 44px;"
             link-token="{{ link_token }}"
             {% if is_demo_group %}disabled title="Adding accounts is disabled for the demo group"{% endif %}
         >
-            Add Account
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+            ACCOUNT
         </button>
     </div>
-</div>
-<ul class="list-group" style="margin-top: 10px;">
-{% for account in accounts %}
-    <a class="list-group-item" href="accounts/{{ account.account_id }}">
-        <div class="row">
-            <div class="col">{{ account.display_name }}</div>
-            <div class="col">{{ account.display_balance }}</div>
+
+    <section class="ledger-section">
+        <div class="ledger-section-header">
+            <h2 class="eyebrow m-0">Linked accounts</h2>
+            <span class="num small text-body-secondary">{{ accounts|length }}</span>
         </div>
-        {% if account.out_of_date %}
-            <span class="badge text-bg-danger rounded-pill" style="position: absolute; top: 5px; right: 5px;">Re-Auth</span>
-        {% endif %}
-    </a>
-{% endfor %}
-</ul>
+        {% for account in accounts %}
+        <a class="list-row" href="/accounts/{{ account.account_id }}">
+            <span class="min-w-0">
+                <span class="list-row-name d-block">{{ account.display_name }}</span>
+                {% if account.out_of_date %}
+                <span class="list-row-meta d-block text-warn">Needs re-authentication</span>
+                {% else %}
+                <span class="list-row-meta d-block">{{ account.sub_type|default:account.type|capfirst }}</span>
+                {% endif %}
+            </span>
+            <span class="num fw-semibold text-nowrap">{{ account.display_balance|cut:"$" }}</span>
+        </a>
+        {% empty %}
+        <p class="text-body-secondary small py-3 mb-0">No accounts linked yet.</p>
+        {% endfor %}
+    </section>
+</div>
 {% endblock %}

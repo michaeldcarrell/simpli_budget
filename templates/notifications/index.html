@@ -5,118 +5,117 @@
     <link href="{% static 'notifications/css/index.css' %}" rel="stylesheet">
 {% endblock %}
 {% block body %}
-<div class="row" style="margin: 10px 0;">
-    <div class="col">
-        <h2>Notifications</h2>
-    </div>
-</div>
-<div class="row" style="margin: 10px 0;">
-    <div class="col-12 col-lg-6">
-        <div class="form-check form-switch">
-            <input
-                type="checkbox"
-                role="switch"
-                id="discord-notifications-enabled"
-                class="form-check-input notification-channel-toggle"
-                data-field="discord_notifications_enabled"
-                data-label="Discord notifications"
-                {% if discord_notifications_enabled %}checked{% endif %}
-            >
-            <label for="discord-notifications-enabled" class="form-check-label">Discord notifications</label>
-            <button type="button" class="btn btn-link notification-help" aria-label="About Discord notifications"
-                data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
-                data-bs-title="Sends your notification categories summary as a Discord DM to the Discord User ID below.">{% include "notifications/_info_icon.html" %}</button>
+<div class="page-narrow">
+    <h1 class="page-title">Notifications</h1>
+    <p class="page-subtitle">A summary of the categories you pick, sent where you choose</p>
+
+    <section class="ledger-section">
+        <div class="ledger-section-header">
+            <h2 class="eyebrow m-0">Send to</h2>
         </div>
-    </div>
-</div>
-<div class="row" style="margin: 10px 0;">
-    <div class="col-12 col-lg-6">
-        <label for="discord-user-id" class="form-label">Discord User ID</label>
-        <button type="button" class="btn btn-link notification-help" aria-label="About finding your Discord User ID"
-                data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
-                data-bs-title="<strong>How to find your Discord User ID:</strong><ol><li>In Discord, open Settings &rarr; Advanced and turn on <strong>Developer Mode</strong>.</li><li>Right-click (or tap and hold, on mobile) your name or avatar anywhere in Discord.</li><li>Click <strong>Copy User ID</strong> and paste it into this field.</li></ol>It's a long number (e.g. <code>123456789012345678</code>), not your username.">{% include "notifications/_info_icon.html" %}</button>
-        <input
-            type="text"
-            id="discord-user-id"
-            class="form-control"
-            placeholder="e.g. 123456789012345678"
-            value="{{ discord_user_id|default_if_none:'' }}"
-        >
-    </div>
-</div>
-<div class="row" style="margin: 10px 0;">
-    <div class="col-12 col-lg-6">
-        <div class="form-check form-switch">
-            <input
-                type="checkbox"
-                role="switch"
-                id="email-notifications-enabled"
-                class="form-check-input notification-channel-toggle"
-                data-field="email_notifications_enabled"
-                data-label="email notifications"
-                {% if email_notifications_enabled %}checked{% endif %}
-            >
-            <label for="email-notifications-enabled" class="form-check-label">Email notifications</label>
-            <button type="button" class="btn btn-link notification-help" aria-label="About email notifications"
-                data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
-                data-bs-title="Sends your notification categories summary by email to <strong>{{ user.email }}</strong>, the Google account you sign in with.">{% include "notifications/_info_icon.html" %}</button>
+        <div class="list-row">
+            <span class="min-w-0">
+                <label for="discord-notifications-enabled" class="list-row-name">Discord</label>
+                <button type="button" class="btn btn-link notification-help" aria-label="About Discord notifications"
+                    data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
+                    data-bs-title="Sends your notification categories summary as a Discord DM to the Discord User ID below.">{% include "notifications/_info_icon.html" %}</button>
+            </span>
+            <span class="form-check form-switch m-0">
+                <input
+                    type="checkbox"
+                    role="switch"
+                    id="discord-notifications-enabled"
+                    class="form-check-input notification-channel-toggle"
+                    data-field="discord_notifications_enabled"
+                    data-label="Discord notifications"
+                    {% if discord_notifications_enabled %}checked{% endif %}
+                >
+            </span>
         </div>
-    </div>
-</div>
-<div class="row" style="margin: 10px 0;">
-    <div class="col-12 col-lg-3">
-        <label for="notification-frequency-days" class="form-label">Notification Frequency</label>
-        <button type="button" class="btn btn-link notification-help" aria-label="About notification frequency"
-                data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
-                data-bs-title="How many days to wait between summary notifications. Use <code>1</code> for daily.">{% include "notifications/_info_icon.html" %}</button>
-        <div class="input-group">
+        <div class="py-3" style="border-bottom: 1px solid var(--sb-line-soft);">
+            <label for="discord-user-id" class="stat-label">Discord user ID</label>
+            <button type="button" class="btn btn-link notification-help" aria-label="About finding your Discord User ID"
+                    data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
+                    data-bs-title="<strong>How to find your Discord User ID:</strong><ol><li>In Discord, open Settings &rarr; Advanced and turn on <strong>Developer Mode</strong>.</li><li>Right-click (or tap and hold, on mobile) your name or avatar anywhere in Discord.</li><li>Click <strong>Copy User ID</strong> and paste it into this field.</li></ol>It's a long number (e.g. <code>123456789012345678</code>), not your username.">{% include "notifications/_info_icon.html" %}</button>
             <input
-                type="number"
-                id="notification-frequency-days"
-                class="form-control"
-                min="1"
-                step="1"
-                value="{{ notification_frequency_days }}"
+                type="text"
+                id="discord-user-id"
+                class="form-control num mt-1"
+                inputmode="numeric"
+                placeholder="e.g. 123456789012345678"
+                value="{{ discord_user_id|default_if_none:'' }}"
             >
-            <span class="input-group-text">day(s) apart</span>
         </div>
+        <div class="list-row">
+            <span class="min-w-0">
+                <label for="email-notifications-enabled" class="list-row-name">Email</label>
+                <button type="button" class="btn btn-link notification-help" aria-label="About email notifications"
+                    data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
+                    data-bs-title="Sends your notification categories summary by email to <strong>{{ user.email }}</strong>, the Google account you sign in with.">{% include "notifications/_info_icon.html" %}</button>
+                <span class="list-row-meta d-block">{{ user.email }}</span>
+            </span>
+            <span class="form-check form-switch m-0">
+                <input
+                    type="checkbox"
+                    role="switch"
+                    id="email-notifications-enabled"
+                    class="form-check-input notification-channel-toggle"
+                    data-field="email_notifications_enabled"
+                    data-label="email notifications"
+                    {% if email_notifications_enabled %}checked{% endif %}
+                >
+            </span>
+        </div>
+        <div class="py-3">
+            <label for="notification-frequency-days" class="stat-label">How often</label>
+            <button type="button" class="btn btn-link notification-help" aria-label="About notification frequency"
+                    data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
+                    data-bs-title="How many days to wait between summary notifications. Use <code>1</code> for daily.">{% include "notifications/_info_icon.html" %}</button>
+            <div class="input-group mt-1" style="max-width: 240px;">
+                <span class="input-group-text">Every</span>
+                <input
+                    type="number"
+                    id="notification-frequency-days"
+                    class="form-control num"
+                    min="1"
+                    step="1"
+                    inputmode="numeric"
+                    value="{{ notification_frequency_days }}"
+                >
+                <span class="input-group-text">day(s)</span>
+            </div>
+        </div>
+    </section>
+
+    <div class="d-flex align-items-center gap-1 mt-4">
+        <h2 class="eyebrow m-0">Categories in the summary</h2>
+        <button type="button" class="btn btn-link notification-help" aria-label="About notification categories"
+                    data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
+                    data-bs-title="Pick which categories to include in your summary.">{% include "notifications/_info_icon.html" %}</button>
     </div>
-</div>
-<div class="row" style="margin: 10px 0;">
-    <div class="col">
-        <h4>
-            Notification Categories
-            <button type="button" class="btn btn-link notification-help" aria-label="About notification categories"
-                data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
-                data-bs-title="Pick which categories to include in your summary.">{% include "notifications/_info_icon.html" %}</button>
-        </h4>
-    </div>
-</div>
-<ul class="list-group">
-{% for section in sections %}
-    <li class="list-group-item">
-        {{ section.category_type.category_type_name }}
-        <ul class="list-group">
+    {% for section in sections %}
+    <section class="ledger-section mt-3">
+        <div class="ledger-section-header">
+            <h3 class="eyebrow m-0" style="color: var(--sb-dim);">{{ section.category_type.category_type_name }}</h3>
+        </div>
         {% for category in section.categories %}
-            <li class="row list-group-item" style="display: flex!important;">
-                <div class="col">{{ category.category_name }}</div>
-                <div class="col-auto">
-                    <div class="form-check form-switch">
-                        <input
-                            type="checkbox"
-                            role="switch"
-                            class="form-check-input notification-category-toggle"
-                            data-category-id="{{ category.category_id }}"
-                            {% if category.is_subscribed %}checked{% endif %}
-                        >
-                    </div>
-                </div>
-            </li>
+        <label class="list-row" for="notify-category-{{ category.category_id }}" style="cursor: pointer;">
+            <span class="list-row-name">{{ category.category_name }}</span>
+            <span class="form-check form-switch m-0">
+                <input
+                    type="checkbox"
+                    role="switch"
+                    id="notify-category-{{ category.category_id }}"
+                    class="form-check-input notification-category-toggle"
+                    data-category-id="{{ category.category_id }}"
+                    {% if category.is_subscribed %}checked{% endif %}
+                >
+            </span>
+        </label>
         {% endfor %}
-        </ul>
-    </li>
-{% endfor %}
-</ul>
+    </section>
+    {% endfor %}
+</div>
 {% endblock %}
 {% block scripts %}
     <script src="{% static "notifications/js/index.js" %}"></script>

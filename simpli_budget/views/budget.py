@@ -37,10 +37,21 @@ class BudgetCategory(LoginRequiredMixin, View):
             ).first()
         )
 
+        spent = category_month.month_total
+        budgeted = category_month.amount or 0
+        is_income = bool(category.category_type.invert_amounts)
+        month_start = category_month.month.start_of_month_date
         context = {
             "title": f"{category.category_name} - {category_month.month.name_short}",
             "category_month": category_month,
             'categories': categories,
+            'is_income': is_income,
+            'spent_display': _num(spent),
+            'budgeted_display': _num(budgeted),
+            'left_display': _num(abs(budgeted - spent)),
+            'left_label': ('Above' if spent >= budgeted else 'To go') if is_income else ('Over' if spent > budgeted else 'Left'),
+            'left_is_over': not is_income and spent > budgeted,
+            'month_label': f"{month_start.month_name_short} {month_start.year}".upper(),
         }
 
         return render(request, template_name="budget/category.html", context=context)

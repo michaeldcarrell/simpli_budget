@@ -1,6 +1,6 @@
 {% extends "_layout.html" %}
 {% load static %}
-{% block title %}My Accounts - Simplibudget{% endblock %}
+{% block title %}{{ account.display_name }}{% endblock %}
 {% block scripts %}
     <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
     <script src="{% static "accounts/classes/Account.js" %}"></script>
@@ -8,30 +8,46 @@
     <script src="{% static "accounts/account.js" %}"></script>
 {% endblock %}
 {% block body %}
-    <div class="container" style="margin-top: 20px;">
-        <div class="row {% if not account.out_of_date %}hidden{% endif %}" style="margin-top: 10px;">
-            <button
-                    id="re-auth-btn"
-                    type="button"
-                    class="btn btn-warning"
-                    account-id="{{ account.account_id }}"
-                    access-token-id="{{ account.access_token_id }}"
-                    link-token="{{ link_token }}"
-            >
-                Re-Authenticate
-            </button>
-        </div>
-        <div class="row">
-            <label for="official-name">Official Name</label>
-            <input type="text" id="official-name" class="form-control" value="{{ account.official_name }}" disabled>
-        </div>
-        <div class="row">
-            <label for="name">Name</label>
-            <input type="text" id="name" class="form-control" value="{{ account.name }}" disabled>
-        </div>
-        <div class="row">
-            <label for="given-name">Given Name</label>
-            <input type="text" id="given-name" class="form-control" data-account-id="{{ account.account_id }}" {% if account.given_name is not None %}value="{{ account.given_name }}" {% else %}placeholder="Your Name" {% endif %}>
-        </div>
+<div class="page-narrow">
+    <a href="/accounts" class="back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+        Accounts
+    </a>
+    <p class="eyebrow mt-3 mb-1">{{ account.sub_type|default:account.type|upper }}</p>
+    <h1 class="detail-title">{{ account.display_name }}</h1>
+    <p class="num mt-2 mb-0" style="font-size: 28px; font-weight: 600;">{{ account.display_balance|cut:"$" }}</p>
+
+    <div class="{% if not account.out_of_date %}hidden{% endif %} mt-3 p-3 rounded" style="border: 1px solid var(--sb-warn);">
+        <p class="mb-2 text-warn fw-semibold">This account stopped syncing</p>
+        <p class="small text-body-secondary mb-3">Sign in to your bank again so new transactions keep coming in.</p>
+        <button
+                id="re-auth-btn"
+                type="button"
+                class="btn btn-primary w-100"
+                style="height: 48px;"
+                account-id="{{ account.account_id }}"
+                access-token-id="{{ account.access_token_id }}"
+                link-token="{{ link_token }}"
+        >
+            Re-authenticate
+        </button>
     </div>
+
+    <div class="mt-4">
+        <label for="given-name" class="stat-label d-block mb-1">Your name for it</label>
+        <input type="text" id="given-name" class="form-control" data-account-id="{{ account.account_id }}" {% if account.given_name is not None %}value="{{ account.given_name }}" {% else %}placeholder="e.g. Joint checking" {% endif %}>
+        <p class="small text-body-secondary mt-1 mb-0">Shown everywhere instead of the bank's name. Leave blank to use the bank's name.</p>
+    </div>
+
+    <dl class="detail-list mt-4">
+        <div>
+            <dt>Official name</dt>
+            <dd>{{ account.official_name|default:"—" }}</dd>
+        </div>
+        <div>
+            <dt>Bank's name</dt>
+            <dd>{{ account.name }}</dd>
+        </div>
+    </dl>
+</div>
 {% endblock %}

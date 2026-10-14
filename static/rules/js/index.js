@@ -6,10 +6,16 @@ let controller = function() {
     };
     let inits = function() {
         objs.createRuleSet.addEventListener('click', function() {
-            let ruleSet = new RuleSet({
-                name: objs.newRuleSetName.value,
-                category_id: objs.newRuleSetCategory.value,
-            });
+            let ruleSet;
+            try {
+                ruleSet = new RuleSet({
+                    name: objs.newRuleSetName.value.trim(),
+                    category_id: objs.newRuleSetCategory.value,
+                });
+            } catch (e) {
+                alert('Give the rule a name and pick a category.');
+                return;
+            }
             ruleSet.create();
         })
     }();

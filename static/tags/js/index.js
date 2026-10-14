@@ -19,6 +19,7 @@ let controller = function() {
     let inits = function() {
         let removeModal = new bootstrap.Modal(objs.removeModalEl);
         let createTypeModal = new bootstrap.Modal(objs.createTypeModalEl);
+        let addSheet = document.getElementById('add-tag-sheet');
 
         objs.typeSelect.addEventListener('change', function() {
             if (objs.typeSelect.value !== '__create_type__') {
@@ -27,7 +28,18 @@ let controller = function() {
             objs.typeSelect.value = objs.typeSelect.options[0].value;
             objs.newTypeNameInput.value = '';
             objs.newTypeErrorBox.classList.add('hidden');
+            // A sheet and a modal both trap focus, so swap one for the other rather than stacking them.
+            bootstrap.Offcanvas.getOrCreateInstance(addSheet).hide();
             createTypeModal.show();
+        });
+        objs.createTypeModalEl.addEventListener('shown.bs.modal', function() {
+            objs.newTypeNameInput.focus();
+        });
+        objs.createTypeModalEl.addEventListener('hidden.bs.modal', function() {
+            bootstrap.Offcanvas.getOrCreateInstance(addSheet).show();
+        });
+        addSheet.addEventListener('shown.bs.offcanvas', function() {
+            objs.nameInput.focus();
         });
 
         objs.confirmCreateTypeBtn.addEventListener('click', function() {

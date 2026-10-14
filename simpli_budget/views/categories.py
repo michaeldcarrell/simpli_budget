@@ -76,11 +76,30 @@ class Categories(LoginRequiredMixin, View):
             for category_type in category_types
         ]
         _set_monthly_averages(group_id, sections)
+
+        budgeted_income = budgeted_expenses = 0
+        for section in sections:
+            is_income = bool(section["category_type"].invert_amounts)
+            section["is_income"] = is_income
+            section["total"] = sum(category.default_monthly_amount or 0 for category in section["categories"])
+            for category in section["categories"]:
+                budget = category.default_monthly_amount or 0
+                category.average_over_budget = (
+                    not is_income and category.monthly_average is not None and category.monthly_average > budget
+                )
+            if is_income:
+                budgeted_income += section["total"]
+            else:
+                budgeted_expenses += section["total"]
+
         context = {
             "title": "Categories",
             "category_types": category_types,
             "sections": sections,
             "average_months": AVERAGE_MONTHS,
+            "budgeted_income": budgeted_income,
+            "budgeted_expenses": budgeted_expenses,
+            "unassigned": budgeted_income - budgeted_expenses,
         }
         return render(request, template_name="categories/index.html", context=context)
 

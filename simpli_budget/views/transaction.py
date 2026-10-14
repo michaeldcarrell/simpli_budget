@@ -11,7 +11,6 @@ from simpli_budget.models import (
     get_user_group,
     Accounts,
 )
-from helpers import Input
 
 class CurrentTransactionTag(NamedTuple):
     tag_id: int
@@ -22,8 +21,8 @@ class CurrentTransactionTag(NamedTuple):
 
 class Transaction(LoginRequiredMixin, View):
     def get(self, request, transaction_id: str):
-        transaction = Transactions.objects.get(transaction_id=transaction_id)
-        if not transaction.user_has_access(request.user):
+        transaction = Transactions.objects.filter(transaction_id=transaction_id).first()
+        if transaction is None or not transaction.user_has_access(request.user):
             return render(
                 request,
                 template_name="404.html",
@@ -53,48 +52,20 @@ class Transaction(LoginRequiredMixin, View):
 
             current_transaction_tags.append(current_transaction_tag)
 
+        amount = transaction.amount
+        is_inflow = amount < 0
         context = {
             'title': transaction.name,
             'transaction': transaction,
             'categories': categories,
             'transaction_tags': current_transaction_tags,
-            'inputs': [
-                Input(
-                    id='transaction_name',
-                    label='Transaction Name',
-                    type='text',
-                    value=transaction.name,
-                    disabled=True
-                ),
-                Input(
-                    id='account',
-                    label='Account',
-                    type='text',
-                    value=transaction.account.display_name,
-                    disabled=True
-                ),
-                Input(
-                    id='date',
-                    label='Date',
-                    type='text',
-                    value=transaction.date.date.strftime('%Y-%m-%d'),
-                    disabled=True
-                ),
-                Input(
-                    id='payee',
-                    label='Payee',
-                    type='text',
-                    value=transaction.merchant_name,
-                    disabled=True
-                ),
-                Input(
-                    id='amount',
-                    label='Amount',
-                    type='text',
-                    value=transaction.display_amount,
-                    disabled=True
-                )
-            ]
+            'amount_display': f"{'+' if is_inflow else ''}{abs(amount):,.2f}",
+            'is_inflow': is_inflow,
+            'details': [
+                ('Date', transaction.date.date.strftime('%a %b %-d, %Y')),
+                ('Account', transaction.account.display_name),
+                ('Payee', transaction.merchant_name or '—'),
+            ],
         }
         return render(request, template_name="transaction/index.html", context=context)
 
