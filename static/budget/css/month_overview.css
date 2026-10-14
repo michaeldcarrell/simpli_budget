@@ -1,3 +1,10 @@
+/* Category types are the headings here: full-strength ink and bold, with the categories under them lighter. */
+.ledger-section-header h2 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--sb-ink);
+}
+
 /* One category: name + amount on top, segmented bar + status below. The whole row is a button. */
 .ledger-row {
     display: grid;
@@ -27,7 +34,8 @@
 
 .ledger-name {
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 400;
+    color: var(--sb-muted);
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
