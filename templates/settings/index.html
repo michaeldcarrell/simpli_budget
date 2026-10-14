@@ -9,6 +9,25 @@
 </div>
 <div class="row" style="margin: 10px 0;">
     <div class="col-12 col-lg-6">
+        <div class="form-check form-switch">
+            <input
+                type="checkbox"
+                role="switch"
+                id="discord-notifications-enabled"
+                class="form-check-input notification-channel-toggle"
+                data-field="discord_notifications_enabled"
+                data-label="Discord notifications"
+                {% if discord_notifications_enabled %}checked{% endif %}
+            >
+            <label for="discord-notifications-enabled" class="form-check-label">Discord notifications</label>
+        </div>
+        <div class="form-text">
+            Send your budget notification categories summary as a Discord DM to the Discord User ID below.
+        </div>
+    </div>
+</div>
+<div class="row" style="margin: 10px 0;">
+    <div class="col-12 col-lg-6">
         <label for="discord-user-id" class="form-label">Discord User ID</label>
         <input
             type="text"
@@ -17,9 +36,6 @@
             placeholder="e.g. 123456789012345678"
             value="{{ discord_user_id|default_if_none:'' }}"
         >
-        <div class="form-text">
-            Used to send you your budget notification categories summary as a Discord DM. Leave blank to turn Discord notifications off.
-        </div>
         <div class="form-text">
             <strong>How to find your Discord User ID:</strong>
             <ol style="margin-bottom: 0;">
@@ -33,16 +49,20 @@
 </div>
 <div class="row" style="margin: 10px 0;">
     <div class="col-12 col-lg-6">
-        <label for="notification-email" class="form-label">Notification Email</label>
-        <input
-            type="email"
-            id="notification-email"
-            class="form-control"
-            placeholder="e.g. {{ user.email|default:'you@example.com' }}"
-            value="{{ notification_email|default_if_none:'' }}"
-        >
+        <div class="form-check form-switch">
+            <input
+                type="checkbox"
+                role="switch"
+                id="email-notifications-enabled"
+                class="form-check-input notification-channel-toggle"
+                data-field="email_notifications_enabled"
+                data-label="email notifications"
+                {% if email_notifications_enabled %}checked{% endif %}
+            >
+            <label for="email-notifications-enabled" class="form-check-label">Email notifications</label>
+        </div>
         <div class="form-text">
-            Used to send you your budget notification categories summary by email. Leave blank to turn email notifications off.
+            Send your budget notification categories summary by email to <strong>{{ user.email }}</strong>, the Google account you sign in with.
         </div>
     </div>
 </div>

@@ -34,7 +34,8 @@ class Settings(LoginRequiredMixin, View):
         context = {
             "title": "Settings",
             "discord_user_id": user_attributes.discord_user_id,
-            "notification_email": user_attributes.notification_email,
+            "discord_notifications_enabled": user_attributes.discord_notifications_enabled,
+            "email_notifications_enabled": user_attributes.email_notifications_enabled,
             "notification_frequency_days": user_attributes.notification_frequency_days,
             "sections": sections,
         }
