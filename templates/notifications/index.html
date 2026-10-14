@@ -1,6 +1,9 @@
 {% extends "_layout.html" %}
 {% load static %}
 {% block title %}{{ title }}{% endblock %}
+{% block styles %}
+    <link href="{% static 'notifications/css/index.css' %}" rel="stylesheet">
+{% endblock %}
 {% block body %}
 <div class="row" style="margin: 10px 0;">
     <div class="col">
@@ -20,15 +23,18 @@
                 {% if discord_notifications_enabled %}checked{% endif %}
             >
             <label for="discord-notifications-enabled" class="form-check-label">Discord notifications</label>
-        </div>
-        <div class="form-text">
-            Send your budget notification categories summary as a Discord DM to the Discord User ID below.
+            <button type="button" class="btn btn-link notification-help" aria-label="About Discord notifications"
+                data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
+                data-bs-title="Sends your notification categories summary as a Discord DM to the Discord User ID below.">{% include "notifications/_info_icon.html" %}</button>
         </div>
     </div>
 </div>
 <div class="row" style="margin: 10px 0;">
     <div class="col-12 col-lg-6">
         <label for="discord-user-id" class="form-label">Discord User ID</label>
+        <button type="button" class="btn btn-link notification-help" aria-label="About finding your Discord User ID"
+                data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
+                data-bs-title="<strong>How to find your Discord User ID:</strong><ol><li>In Discord, open Settings &rarr; Advanced and turn on <strong>Developer Mode</strong>.</li><li>Right-click (or tap and hold, on mobile) your name or avatar anywhere in Discord.</li><li>Click <strong>Copy User ID</strong> and paste it into this field.</li></ol>It's a long number (e.g. <code>123456789012345678</code>), not your username.">{% include "notifications/_info_icon.html" %}</button>
         <input
             type="text"
             id="discord-user-id"
@@ -36,15 +42,6 @@
             placeholder="e.g. 123456789012345678"
             value="{{ discord_user_id|default_if_none:'' }}"
         >
-        <div class="form-text">
-            <strong>How to find your Discord User ID:</strong>
-            <ol style="margin-bottom: 0;">
-                <li>In Discord, open Settings &rarr; Advanced, and turn on <strong>Developer Mode</strong>.</li>
-                <li>Right-click (or tap and hold, on mobile) your name or avatar anywhere in Discord.</li>
-                <li>Click <strong>Copy User ID</strong> and paste it into the field above.</li>
-            </ol>
-            It's a long number (e.g. <code>123456789012345678</code>), not your username.
-        </div>
     </div>
 </div>
 <div class="row" style="margin: 10px 0;">
@@ -60,15 +57,18 @@
                 {% if email_notifications_enabled %}checked{% endif %}
             >
             <label for="email-notifications-enabled" class="form-check-label">Email notifications</label>
-        </div>
-        <div class="form-text">
-            Send your budget notification categories summary by email to <strong>{{ user.email }}</strong>, the Google account you sign in with.
+            <button type="button" class="btn btn-link notification-help" aria-label="About email notifications"
+                data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
+                data-bs-title="Sends your notification categories summary by email to <strong>{{ user.email }}</strong>, the Google account you sign in with.">{% include "notifications/_info_icon.html" %}</button>
         </div>
     </div>
 </div>
 <div class="row" style="margin: 10px 0;">
     <div class="col-12 col-lg-3">
         <label for="notification-frequency-days" class="form-label">Notification Frequency</label>
+        <button type="button" class="btn btn-link notification-help" aria-label="About notification frequency"
+                data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
+                data-bs-title="How many days to wait between summary notifications. Use <code>1</code> for daily.">{% include "notifications/_info_icon.html" %}</button>
         <div class="input-group">
             <input
                 type="number"
@@ -80,17 +80,16 @@
             >
             <span class="input-group-text">day(s) apart</span>
         </div>
-        <div class="form-text">
-            How many days to wait between summary notifications. Use <code>1</code> for daily.
-        </div>
     </div>
 </div>
 <div class="row" style="margin: 10px 0;">
     <div class="col">
-        <h4>Notification Categories</h4>
-        <div class="form-text" style="margin-bottom: 10px;">
-            Pick which categories to include in your summary.
-        </div>
+        <h4>
+            Notification Categories
+            <button type="button" class="btn btn-link notification-help" aria-label="About notification categories"
+                data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
+                data-bs-title="Pick which categories to include in your summary.">{% include "notifications/_info_icon.html" %}</button>
+        </h4>
     </div>
 </div>
 <ul class="list-group">
