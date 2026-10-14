@@ -77,6 +77,8 @@ Google-only social login via django-allauth: `SOCIALACCOUNT_ONLY = True` and `Cu
 ### Frontend
 No JS framework or bundler — each feature has a plain JS file under `static/<feature>/js/` that calls the `api/` endpoints directly (fetch/XHR) and manipulates the DOM. Templates live under `templates/<feature>/` and extend `templates/_layout.html`.
 
+Styling is Bootstrap 5.3 themed as "Night Ledger": `static/global/css/global.css` defines `--sb-*` colour tokens for dark (default) and light, maps Bootstrap's variables onto them, and holds the app shell (header, desktop nav, phone bottom tab bar, "More" sheet). The theme is per user (`UserAttributes.theme`, set on `<html data-bs-theme>` by the `user_preferences` context processor, toggled via `/api/settings`). Use the tokens and shared classes (`.num` for monospace amounts, `.eyebrow`, `.page-title`, `.stat-strip`, `.icon-button`) rather than hard-coded colours so both themes keep working.
+
 ### Surrounding infrastructure (outside this repo)
 This app is one piece of a larger personal-infra setup, which matters when reasoning about where data comes from or where a job should live:
 - **A home server** runs this app (via Docker/Portainer, container name `simpli_budget`, project `budget`) alongside the other services in this ecosystem, including Airflow — local-only, no external hosting. See [`../STACK_TOPOLOGY.md`](../STACK_TOPOLOGY.md) for the live deployment details (it's a Pattern B stack — the repo's `docker-compose.yaml` is not authoritative).

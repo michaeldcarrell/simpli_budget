@@ -1,14 +1,437 @@
+/* ------------------------------------------------------------------
+   Theme tokens ("Night Ledger"). Dark is the default; light is the
+   user's opt-in. Everything else in the app should use these
+   variables (or the Bootstrap variables mapped onto them below)
+   rather than hard-coded colours, so both themes stay in step.
+   ------------------------------------------------------------------ */
+:root,
+[data-bs-theme="dark"] {
+    --sb-bg: #121417;
+    --sb-surface: #1b1e23;
+    --sb-surface-2: #16191d;
+    --sb-line: #2a2f36;
+    --sb-line-soft: #1f2329;
+    --sb-ink: #e8eaed;
+    --sb-muted: #9aa3ad;
+    --sb-dim: #6b7480;
+    --sb-accent: #4cc38a;
+    --sb-accent-rgb: 76, 195, 138;
+    --sb-accent-hover: #6ad3a0;
+    --sb-accent-ink: #0d1f16;
+    --sb-accent-soft: #16261e;
+    --sb-over: #ff8a65;
+    --sb-warn: #f5c451;
+    --sb-track: #2a2f36;
+    --sb-scrim: rgba(5, 6, 8, 0.66);
+}
+
+[data-bs-theme="light"] {
+    --sb-bg: #f4f5f7;
+    --sb-surface: #ffffff;
+    --sb-surface-2: #ffffff;
+    --sb-line: #d9dde3;
+    --sb-line-soft: #eceef1;
+    --sb-ink: #15181c;
+    --sb-muted: #5b636d;
+    --sb-dim: #8a929b;
+    --sb-accent: #1a7f52;
+    --sb-accent-rgb: 26, 127, 82;
+    --sb-accent-hover: #146b44;
+    --sb-accent-ink: #ffffff;
+    --sb-accent-soft: #e3f4ec;
+    --sb-over: #c4410f;
+    --sb-warn: #8a6100;
+    --sb-track: #e3e6ea;
+    --sb-scrim: rgba(21, 24, 28, 0.45);
+}
+
+:root {
+    --sb-font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --sb-font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sb-tab-bar-height: 64px;
+}
+
+/* Map Bootstrap's own variables onto the tokens. */
+[data-bs-theme="dark"],
+[data-bs-theme="light"] {
+    --bs-body-font-family: var(--sb-font-sans);
+    --bs-font-monospace: var(--sb-font-mono);
+    --bs-body-bg: var(--sb-bg);
+    --bs-body-color: var(--sb-ink);
+    --bs-emphasis-color: var(--sb-ink);
+    --bs-secondary-color: var(--sb-muted);
+    --bs-tertiary-color: var(--sb-dim);
+    --bs-secondary-bg: var(--sb-surface);
+    --bs-tertiary-bg: var(--sb-surface-2);
+    --bs-border-color: var(--sb-line);
+    --bs-border-color-translucent: var(--sb-line);
+    --bs-primary: var(--sb-accent);
+    --bs-primary-rgb: var(--sb-accent-rgb);
+    --bs-primary-bg-subtle: var(--sb-accent-soft);
+    --bs-primary-border-subtle: var(--sb-accent);
+    --bs-primary-text-emphasis: var(--sb-ink);
+    --bs-link-color: var(--sb-accent);
+    --bs-link-color-rgb: var(--sb-accent-rgb);
+    --bs-link-hover-color: var(--sb-accent-hover);
+    --bs-link-hover-color-rgb: var(--sb-accent-rgb);
+    --bs-focus-ring-color: rgba(var(--sb-accent-rgb), 0.35);
+}
+
+body {
+    background: var(--sb-bg);
+    color: var(--sb-ink);
+}
+
+/* Bootstrap compiles its component colours, so the accent has to be applied per component. */
+.btn-primary {
+    --bs-btn-color: var(--sb-accent-ink);
+    --bs-btn-bg: var(--sb-accent);
+    --bs-btn-border-color: var(--sb-accent);
+    --bs-btn-hover-color: var(--sb-accent-ink);
+    --bs-btn-hover-bg: var(--sb-accent-hover);
+    --bs-btn-hover-border-color: var(--sb-accent-hover);
+    --bs-btn-active-color: var(--sb-accent-ink);
+    --bs-btn-active-bg: var(--sb-accent-hover);
+    --bs-btn-active-border-color: var(--sb-accent-hover);
+    --bs-btn-disabled-color: var(--sb-accent-ink);
+    --bs-btn-disabled-bg: var(--sb-accent);
+    --bs-btn-disabled-border-color: var(--sb-accent);
+    --bs-btn-focus-shadow-rgb: var(--sb-accent-rgb);
+    font-weight: 600;
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--sb-accent);
+    --bs-btn-border-color: var(--sb-accent);
+    --bs-btn-hover-color: var(--sb-accent-ink);
+    --bs-btn-hover-bg: var(--sb-accent);
+    --bs-btn-hover-border-color: var(--sb-accent);
+    --bs-btn-active-color: var(--sb-accent-ink);
+    --bs-btn-active-bg: var(--sb-accent);
+    --bs-btn-active-border-color: var(--sb-accent);
+    --bs-btn-focus-shadow-rgb: var(--sb-accent-rgb);
+}
+
+.btn-outline-secondary {
+    --bs-btn-color: var(--sb-ink);
+    --bs-btn-border-color: var(--sb-line);
+    --bs-btn-hover-color: var(--sb-ink);
+    --bs-btn-hover-bg: var(--sb-surface);
+    --bs-btn-hover-border-color: var(--sb-dim);
+    --bs-btn-active-color: var(--sb-ink);
+    --bs-btn-active-bg: var(--sb-surface);
+    --bs-btn-active-border-color: var(--sb-dim);
+}
+
+.form-control,
+.form-select {
+    background-color: var(--sb-surface);
+    border-color: var(--sb-line);
+    color: var(--sb-ink);
+}
+
+.form-control:disabled {
+    background-color: var(--sb-surface-2);
+}
+
+.input-group-text {
+    background-color: var(--sb-surface-2);
+    border-color: var(--sb-line);
+    color: var(--sb-muted);
+}
+
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+    border-color: var(--sb-accent);
+    box-shadow: 0 0 0 0.2rem rgba(var(--sb-accent-rgb), 0.3);
+}
+
+.form-check-input:checked {
+    background-color: var(--sb-accent);
+    border-color: var(--sb-accent);
+}
+
+.text-bg-primary {
+    background-color: var(--sb-accent) !important;
+    color: var(--sb-accent-ink) !important;
+}
+
+.list-group {
+    --bs-list-group-bg: var(--sb-surface);
+    --bs-list-group-border-color: var(--sb-line);
+    --bs-list-group-color: var(--sb-ink);
+}
+
+.dropdown-menu {
+    --bs-dropdown-bg: var(--sb-surface);
+    --bs-dropdown-border-color: var(--sb-line);
+    --bs-dropdown-link-color: var(--sb-ink);
+    --bs-dropdown-link-hover-bg: var(--sb-surface-2);
+    --bs-dropdown-link-active-bg: var(--sb-accent);
+    --bs-dropdown-link-active-color: var(--sb-accent-ink);
+}
+
+.offcanvas {
+    --bs-offcanvas-bg: var(--sb-surface);
+    --bs-offcanvas-border-color: var(--sb-line);
+}
+
+.modal {
+    --bs-modal-bg: var(--sb-surface);
+    --bs-modal-border-color: var(--sb-line);
+}
+
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--sb-ink);
+    --bs-table-border-color: var(--sb-line);
+}
+
+/* Shared helpers */
+.num {
+    font-family: var(--sb-font-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.text-over {
+    color: var(--sb-over) !important;
+}
+
+.text-warn {
+    color: var(--sb-warn) !important;
+}
+
+.eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--sb-muted);
+}
+
+.page-narrow {
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+.page-title {
+    font-family: var(--sb-font-mono);
+    font-size: 30px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.page-subtitle {
+    margin: 4px 0 0 0;
+    font-size: 13px;
+    color: var(--sb-muted);
+}
+
+.icon-button {
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--sb-line);
+    background: var(--sb-surface);
+    color: var(--sb-ink);
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    text-decoration: none;
+}
+
+.icon-button:hover {
+    color: var(--sb-ink);
+    border-color: var(--sb-dim);
+}
+
+/* Summary strip: three stats side by side with dividers. */
+.stat-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border: 1px solid var(--sb-line);
+    border-radius: 8px;
+    background: var(--sb-surface);
+}
+
+.stat-strip > div {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.stat-strip > div + div {
+    border-left: 1px solid var(--sb-line);
+}
+
+.stat-strip .stat-label {
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--sb-muted);
+}
+
+.stat-strip .stat-value {
+    font-family: var(--sb-font-mono);
+    font-size: 15px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------------------
+   App shell: header, desktop nav, phone tab bar, "More" sheet
+   ------------------------------------------------------------------ */
+.app-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    padding-top: calc(10px + env(safe-area-inset-top));
+    background: var(--sb-bg);
+    border-bottom: 1px solid var(--sb-line-soft);
+}
+
+.app-brand {
+    font-family: var(--sb-font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: var(--sb-muted);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.app-brand:hover {
+    color: var(--sb-ink);
+}
+
+.app-nav {
+    display: flex;
+    gap: 2px;
+    margin-left: 12px;
+}
+
+.app-nav a {
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: var(--sb-muted);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.app-nav a:hover {
+    color: var(--sb-ink);
+    background: var(--sb-surface);
+}
+
+.app-nav a[aria-current="page"] {
+    color: var(--sb-accent);
+    background: var(--sb-accent-soft);
+}
+
+.app-header-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.app-main {
+    padding-top: 16px;
+    padding-bottom: 32px;
+}
+
+.tab-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1030;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom)) 4px;
+    background: var(--sb-surface-2);
+    border-top: 1px solid var(--sb-line);
+}
+
+.tab-bar a,
+.tab-bar button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 52px;
+    border: 0;
+    background: transparent;
+    text-decoration: none;
+    color: var(--sb-muted);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.tab-bar [aria-current="page"] {
+    color: var(--sb-accent);
+    font-weight: 600;
+}
+
+@media (max-width: 991.98px) {
+    body {
+        padding-bottom: calc(var(--sb-tab-bar-height) + env(safe-area-inset-bottom));
+    }
+}
+
+.more-sheet {
+    border-radius: 16px 16px 0 0;
+    height: auto !important;
+}
+
+.more-sheet .list-group-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 52px;
+    background: transparent;
+    border-color: var(--sb-line-soft);
+}
+
+.sheet-handle {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--sb-line);
+    margin: 10px auto 0 auto;
+}
+
+.offcanvas-backdrop.show {
+    opacity: 1;
+    background: var(--sb-scrim);
+}
+
+/* ------------------------------------------------------------------
+   Existing shared pieces
+   ------------------------------------------------------------------ */
 #loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(255, 255, 255, 0.9); /* semi-transparent white */
-  z-index: 9999; /* on top of everything */
-  display: flex;
-  justify-content: center;
-  align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--sb-scrim);
+    z-index: 9999; /* on top of everything */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--sb-accent);
 }
 
 .hidden {
@@ -16,9 +439,10 @@
 }
 
 .row-card {
-    border: 1px black solid;
-    border-radius: 5px;
-    color: black;
+    border: 1px solid var(--sb-line);
+    border-radius: 8px;
+    color: var(--sb-ink);
+    background: var(--sb-surface);
     margin: 3px 0px;
 }
 
@@ -31,11 +455,17 @@
 .onboarding-highlight {
     position: relative;
     z-index: 1051;
-    outline: 3px solid #0d6efd;
+    outline: 3px solid var(--sb-accent);
     outline-offset: 2px;
     border-radius: 4px;
 }
 
 .onboarding-popover {
     max-width: 320px;
+}
+
+/* The theme toggle shows the icon for the theme it switches to. */
+.theme-toggle[data-theme="dark"] .theme-icon-dark,
+.theme-toggle[data-theme="light"] .theme-icon-light {
+    display: none;
 }
