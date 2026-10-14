@@ -4,21 +4,21 @@ let onboardingController = function() {
 
     const steps = [
         {
-            page: '/',
+            page: '/budget',
             selector: window.matchMedia('(min-width: 992px)').matches ? '#desktop-nav' : '#tab-bar',
             placement: window.matchMedia('(min-width: 992px)').matches ? 'bottom' : 'top',
             title: 'Welcome to Simpli Budget',
             body: 'This is how you get everywhere: Budget for your monthly overview, Transactions to search everything, and Categories, Tags, Rules, and Accounts (under More on a phone) to manage the pieces that power your budget.'
         },
         {
-            page: '/',
+            page: '/budget',
             selector: '#next-month',
             placement: 'left',
             title: 'Move between months',
             body: 'Use these arrows to look back at past months or ahead to upcoming ones.'
         },
         {
-            page: '/',
+            page: '/budget',
             selector: '.category-month-row',
             placement: 'top',
             title: 'Your categories',
