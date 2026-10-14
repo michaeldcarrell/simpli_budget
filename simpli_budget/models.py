@@ -104,6 +104,7 @@ class UserAttributes(models.Model):
     discord_user_id = models.CharField(max_length=32, blank=True, null=True)
     discord_notifications_enabled = models.BooleanField(default=False)
     email_notifications_enabled = models.BooleanField(default=False)
+    theme = models.CharField(max_length=8, default='dark')
     notification_frequency_days = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(default=dt.now)
     updated_at = models.DateTimeField(default=dt.now)

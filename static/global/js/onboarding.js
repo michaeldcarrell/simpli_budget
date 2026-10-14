@@ -5,10 +5,10 @@ let onboardingController = function() {
     const steps = [
         {
             page: '/',
-            selector: '.navbar-nav',
-            placement: 'bottom',
+            selector: window.matchMedia('(min-width: 992px)').matches ? '#desktop-nav' : '#tab-bar',
+            placement: window.matchMedia('(min-width: 992px)').matches ? 'bottom' : 'top',
             title: 'Welcome to Simpli Budget',
-            body: 'This nav bar is how you get everywhere: Budget for your monthly overview, Transactions to search everything, and Categories, Tags, Rules, and Accounts to manage the pieces that power your budget.'
+            body: 'This is how you get everywhere: Budget for your monthly overview, Transactions to search everything, and Categories, Tags, Rules, and Accounts (under More on a phone) to manage the pieces that power your budget.'
         },
         {
             page: '/',
@@ -22,7 +22,7 @@ let onboardingController = function() {
             selector: '.category-month-row',
             placement: 'top',
             title: 'Your categories',
-            body: 'Each row is a budget category for the month. Click one to see its transactions, or edit the Budgeted amount to change what you budgeted for just this month.'
+            body: 'Each row is a budget category for the month. Tap one to change what you budgeted, for just this month or as the default, or to see its transactions.'
         },
         {
             page: '/transactions/search',

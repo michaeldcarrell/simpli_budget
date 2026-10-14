@@ -35,6 +35,7 @@ from simpli_budget.models import (
 from helpers.plaid import Plaid
 from helpers.demo_data import generate_recent_activity
 from helpers.chat import chat_allowed, clean_chat_history, stream_chat, ToolInputError
+from simpli_budget.context_processors import THEMES
 
 logger = logging.getLogger(__name__)
 
@@ -212,6 +213,11 @@ class UserSettingsAPI(APIView):
                 if not isinstance(enabled, bool):
                     return Response(data={'message': f'{toggle} must be true or false'}, status=status.HTTP_400_BAD_REQUEST)
                 updates[toggle] = enabled
+        if 'theme' in request.data:
+            theme = request.data.get('theme')
+            if theme not in THEMES:
+                return Response(data={'message': f"theme must be one of: {', '.join(THEMES)}"}, status=status.HTTP_400_BAD_REQUEST)
+            updates['theme'] = theme
         if 'notification_frequency_days' in request.data:
             try:
                 frequency_days = int(request.data.get('notification_frequency_days'))
@@ -232,6 +238,7 @@ class UserSettingsAPI(APIView):
                 'discord_notifications_enabled': user_attributes.discord_notifications_enabled,
                 'email_notifications_enabled': user_attributes.email_notifications_enabled,
                 'notification_frequency_days': user_attributes.notification_frequency_days,
+                'theme': user_attributes.theme,
             },
             status=status.HTTP_200_OK,
         )
