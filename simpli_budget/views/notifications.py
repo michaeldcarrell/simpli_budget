@@ -4,7 +4,7 @@ from django.views import View
 from simpli_budget.models import CategoryType, get_user_group, NotificationCategories, UserAttributes
 
 
-class Settings(LoginRequiredMixin, View):
+class Notifications(LoginRequiredMixin, View):
     def get(self, request):
         group_id = get_user_group(request.user, request).group_id
         user_attributes, _ = UserAttributes.objects.get_or_create(user=request.user)
@@ -32,11 +32,11 @@ class Settings(LoginRequiredMixin, View):
             })
 
         context = {
-            "title": "Settings",
+            "title": "Notifications",
             "discord_user_id": user_attributes.discord_user_id,
             "discord_notifications_enabled": user_attributes.discord_notifications_enabled,
             "email_notifications_enabled": user_attributes.email_notifications_enabled,
             "notification_frequency_days": user_attributes.notification_frequency_days,
             "sections": sections,
         }
-        return render(request, template_name="settings/index.html", context=context)
+        return render(request, template_name="notifications/index.html", context=context)

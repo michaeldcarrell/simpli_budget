@@ -505,7 +505,7 @@ PAGE_LABELS = {
     'rules': 'the categorization rules list',
     'rule': 'a categorization rule set',
     'tags': 'the tags list',
-    'settings': 'the settings page',
+    'notifications': 'the notification settings page',
 }
 
 

@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView
 from simpli_budget import views
 from django.conf import settings
 from django.conf.urls.static import static
@@ -31,7 +32,8 @@ urlpatterns = [
     path("rules", views.Rules.as_view(), name="rules"),
     path("rules/<int:rule_set_id>", views.RuleView.as_view(), name="rule"),
     path("tags", views.Tags.as_view(), name="tags"),
-    path("settings", views.Settings.as_view(), name="settings"),
+    path("notifications", views.Notifications.as_view(), name="notifications"),
+    path("settings", RedirectView.as_view(url="/notifications")),  # old name, kept for bookmarks
     path("logout", views.Logout.as_view(), name="logout"),
 ]
 
