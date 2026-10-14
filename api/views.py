@@ -4,8 +4,6 @@ import math
 
 import anthropic
 from django.conf import settings
-from django.core.exceptions import ValidationError
-from django.core.validators import validate_email
 from django.http import StreamingHttpResponse
 from django.db import transaction as db_transaction
 from django.db.models import Max
@@ -208,14 +206,12 @@ class UserSettingsAPI(APIView):
         if 'discord_user_id' in request.data:
             discord_user_id = (request.data.get('discord_user_id') or '').strip()
             updates['discord_user_id'] = discord_user_id or None
-        if 'notification_email' in request.data:
-            notification_email = (request.data.get('notification_email') or '').strip()
-            if notification_email:
-                try:
-                    validate_email(notification_email)
-                except ValidationError:
-                    return Response(data={'message': 'notification_email must be a valid email address'}, status=status.HTTP_400_BAD_REQUEST)
-            updates['notification_email'] = notification_email or None
+        for toggle in ('discord_notifications_enabled', 'email_notifications_enabled'):
+            if toggle in request.data:
+                enabled = request.data.get(toggle)
+                if not isinstance(enabled, bool):
+                    return Response(data={'message': f'{toggle} must be true or false'}, status=status.HTTP_400_BAD_REQUEST)
+                updates[toggle] = enabled
         if 'notification_frequency_days' in request.data:
             try:
                 frequency_days = int(request.data.get('notification_frequency_days'))
@@ -233,7 +229,8 @@ class UserSettingsAPI(APIView):
         return Response(
             data={
                 'discord_user_id': user_attributes.discord_user_id,
-                'notification_email': user_attributes.notification_email,
+                'discord_notifications_enabled': user_attributes.discord_notifications_enabled,
+                'email_notifications_enabled': user_attributes.email_notifications_enabled,
                 'notification_frequency_days': user_attributes.notification_frequency_days,
             },
             status=status.HTTP_200_OK,
