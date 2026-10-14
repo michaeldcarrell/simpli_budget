@@ -16,6 +16,7 @@ from datetime import datetime as dt
 from pytz import UTC
 from simpli_budget.models import (
     get_user_group,
+    is_demo_user,
     Transactions,
     Tag,
     TagType,
@@ -36,6 +37,7 @@ from helpers.plaid import Plaid
 from helpers.demo_data import generate_recent_activity
 from helpers.chat import chat_allowed, clean_chat_history, stream_chat, ToolInputError
 from simpli_budget.context_processors import THEMES
+from simpli_budget.middleware import DEMO_READ_ONLY_MESSAGE
 
 logger = logging.getLogger(__name__)
 
@@ -194,6 +196,10 @@ class OnboardingAPI(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        if is_demo_user(request.user):
+            # The demo account is shared, so each visitor's tour progress lives in their own session.
+            request.session['onboarding_completed'] = True
+            return Response(data={'onboarding_completed': True}, status=status.HTTP_200_OK)
         UserAttributes.objects.filter(user=request.user).update(onboarding_completed=True)
         return Response(data={'onboarding_completed': True}, status=status.HTTP_200_OK)
 
@@ -203,6 +209,8 @@ class UserSettingsAPI(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request):
+        if is_demo_user(request.user):
+            return self.__demo_put(request)
         updates = {}
         if 'discord_user_id' in request.data:
             discord_user_id = (request.data.get('discord_user_id') or '').strip()
@@ -242,6 +250,17 @@ class UserSettingsAPI(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+    @staticmethod
+    def __demo_put(request):
+        # The demo account is shared, so only the theme can change, and only for this visitor's session.
+        if set(request.data) - {'theme'}:
+            return Response(data={'message': DEMO_READ_ONLY_MESSAGE}, status=status.HTTP_403_FORBIDDEN)
+        theme = request.data.get('theme')
+        if theme not in THEMES:
+            return Response(data={'message': f"theme must be one of: {', '.join(THEMES)}"}, status=status.HTTP_400_BAD_REQUEST)
+        request.session['theme'] = theme
+        return Response(data={'theme': theme}, status=status.HTTP_200_OK)
 
 
 class NotificationCategoryAPI(APIView):

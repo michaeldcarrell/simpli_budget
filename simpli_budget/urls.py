@@ -8,7 +8,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
     path("api/", include("api.urls")),
-    path("", views.MonthBudget.as_view(), name="index"),
+    path("", views.Landing.as_view(), name="index"),
     path("budget", views.MonthBudget.as_view(), name="budget"),
     path("categories", views.Categories.as_view(), name="categories"),
     path("categories/<str:category_id>", views.Category.as_view(), name="category"),
@@ -35,7 +35,7 @@ urlpatterns = [
     path("notifications", views.Notifications.as_view(), name="notifications"),
     path("settings", RedirectView.as_view(url="/notifications")),  # old name, kept for bookmarks
     path("logout", views.Logout.as_view(), name="logout"),
-    path("logged-out", views.LoggedOut.as_view(), name="logged_out"),
+    path("demo", views.Demo.as_view(), name="demo"),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

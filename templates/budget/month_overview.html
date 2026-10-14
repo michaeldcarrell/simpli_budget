@@ -25,7 +25,7 @@
         </div>
     </div>
 
-    {% if is_demo_group %}
+    {% if is_demo_group and not demo_read_only %}
     <div class="mt-3">
         <button id="generate-demo-activity" type="button" class="btn btn-outline-primary w-100">Simulate More Activity</button>
     </div>

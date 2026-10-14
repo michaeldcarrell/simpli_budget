@@ -24,6 +24,7 @@ from simpli_budget.models import (
     Tag,
     TransactionTag,
     Transactions,
+    is_demo_user,
 )
 
 MAX_TOOL_ROUNDS = 10
@@ -98,6 +99,7 @@ def chat_allowed(user, group) -> bool:
     """Chat is only offered to members of the groups listed in settings.CHAT_GROUP_IDS."""
     return (
         group is not None
+        and not is_demo_user(user)  # public demo visitors shouldn't run up API costs
         and bool(settings.ANTHROPIC_API_KEY)
         and group.group_id in settings.CHAT_GROUP_IDS
         and group.user_has_access(user)
@@ -542,7 +544,7 @@ def describe_page(group: Group, page) -> str | None:
         year_month = _current_year_month()
     name, kwargs = match.url_name, match.kwargs
 
-    if name in ('index', 'budget') and 'category_id' not in kwargs:
+    if name == 'budget' and 'category_id' not in kwargs:
         return f'the monthly budget overview for year_month {year_month}'
     if name == 'budget':
         category = _group_category(group, kwargs['category_id'])

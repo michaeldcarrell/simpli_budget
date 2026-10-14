@@ -17,7 +17,7 @@ let controller = function() {
                 let transaction = new Transaction(transaction_id);
                 transaction.setCategory(categorySelector.value, false);
                 if (objs.categoryMonth.transaction_count === 0) {
-                    window.location.href = `/?month=${objs.categoryMonth.month_id}`;
+                    window.location.href = `/budget?month=${objs.categoryMonth.month_id}`;
                 }
             })
         })

@@ -28,6 +28,10 @@ CBA_POSTGRES_DB_USER = config('CBA_POSTGRES_DB_USER', default='mdc_admin')
 # Group id allowed to generate its own fake demo transactions via the API (see helpers/demo_data.py).
 # Left unset outside the demo environment so the endpoint stays disabled everywhere else.
 DEMO_GROUP_ID = config('DEMO_GROUP_ID', default=None, cast=lambda v: int(v) if v else None)
+# Shared account behind the public "Try the demo" link (/demo). It has no Google login, belongs only to
+# DEMO_GROUP_ID, and is read-only (simpli_budget/middleware.py: DemoReadOnly). Create it with
+# `python manage.py create_demo_user`.
+DEMO_USERNAME = config('DEMO_USERNAME', default='demo')
 
 # Budget chat assistant (helpers/chat.py). Only groups listed in CHAT_GROUP_IDS (comma-separated) get the
 # chat panel and API; left empty, the feature is off everywhere.
@@ -80,7 +84,7 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-LOGIN_URL = "/accounts/google/login"
+LOGIN_URL = "/"
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_ONLY = True
 ACCOUNT_EMAIL_VERIFICATION = "none"
@@ -98,6 +102,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "simpli_budget.middleware.SetUserAttributeDefaults",
+    "simpli_budget.middleware.DemoReadOnly",
 ]
 
 ROOT_URLCONF = "simpli_budget.urls"
@@ -185,5 +190,5 @@ AUTHENTICATION_BACKENDS = (
     "allauth.account.auth_backends.AuthenticationBackend"
 )
 
-LOGIN_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = "/budget"
 LOGOUT_REDIRECT_URL = "/"
