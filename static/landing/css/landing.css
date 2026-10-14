@@ -1,0 +1,210 @@
+.landing {
+    max-width: 1120px;
+    margin: 0 auto;
+}
+
+.landing-notice {
+    margin: 8px auto 0;
+    max-width: 760px;
+    padding: 10px 14px;
+    border: 1px solid var(--sb-line);
+    border-radius: 8px;
+    background: var(--sb-surface);
+    color: var(--sb-muted);
+    text-align: center;
+}
+
+.landing-hero {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 0 40px;
+    text-align: center;
+}
+
+.landing-title {
+    font-size: clamp(30px, 5vw, 46px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+    color: var(--sb-ink);
+    margin-bottom: 16px;
+}
+
+.landing-lede {
+    font-size: 18px;
+    color: var(--sb-muted);
+    margin: 0 auto 28px;
+    max-width: 620px;
+}
+
+.landing-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+}
+
+.shot {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--sb-line);
+    border-radius: 12px;
+    background: var(--sb-surface);
+    box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.55);
+}
+
+/* Desktop screenshot with the phone version overlapping its lower right corner. */
+.landing-showcase {
+    position: relative;
+    padding-right: 120px;
+    margin-bottom: 96px;
+}
+
+.landing-showcase .shot-phone {
+    position: absolute;
+    right: 0;
+    bottom: -48px;
+    width: 230px;
+    border-radius: 24px;
+    border-width: 6px;
+    border-color: var(--sb-line);
+}
+
+.landing-section-title {
+    font-size: clamp(22px, 3vw, 30px);
+    font-weight: 700;
+    color: var(--sb-ink);
+    margin-bottom: 12px;
+}
+
+.landing-features {
+    margin-bottom: 88px;
+}
+
+.landing-features > .landing-section-title {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.feature {
+    padding: 20px;
+    border: 1px solid var(--sb-line);
+    border-radius: 10px;
+    background: var(--sb-surface);
+}
+
+.feature h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--sb-ink);
+    margin-bottom: 6px;
+}
+
+.feature h3::before {
+    content: "";
+    display: block;
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--sb-accent);
+    margin-bottom: 14px;
+}
+
+.feature p {
+    color: var(--sb-muted);
+    margin: 0;
+}
+
+.feature-row {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: 48px;
+    align-items: center;
+    margin-bottom: 88px;
+}
+
+.feature-row-flip {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+}
+
+.feature-row-flip .feature-row-text {
+    order: 2;
+}
+
+.feature-row-text p:last-child {
+    color: var(--sb-muted);
+    font-size: 17px;
+    margin: 0;
+}
+
+.landing-cta {
+    text-align: center;
+    padding: 40px 0 24px;
+    border-top: 1px solid var(--sb-line);
+}
+
+.landing-cta .landing-section-title {
+    margin-bottom: 20px;
+}
+
+@media (max-width: 991.98px) {
+    .feature-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .feature-row,
+    .feature-row-flip {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 24px;
+    }
+
+    .feature-row-flip .feature-row-text {
+        order: 0;
+    }
+}
+
+/* On phones, show the phone screenshot on its own rather than shrinking the desktop one. */
+@media (max-width: 575.98px) {
+    .landing-hero {
+        padding: 28px 0 32px;
+    }
+
+    .landing-lede {
+        font-size: 16px;
+    }
+
+    .landing-actions .btn {
+        width: 100%;
+    }
+
+    .landing-showcase {
+        padding-right: 0;
+        margin-bottom: 56px;
+    }
+
+    .landing-showcase .shot-desktop {
+        display: none;
+    }
+
+    .landing-showcase .shot-phone {
+        position: static;
+        width: min(280px, 80%);
+        margin: 0 auto;
+    }
+
+    .feature-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .landing-features,
+    .feature-row {
+        margin-bottom: 56px;
+    }
+}

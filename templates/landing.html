@@ -1,17 +1,105 @@
 {% extends "_layout.html" %}
+{% load static %}
 {% block title %}{% if signed_out %}Signed out{% else %}Welcome{% endif %}{% endblock %}
+{% block styles %}
+<link href="{% static 'landing/css/landing.css' %}" rel="stylesheet">
+{% endblock %}
 {% block body %}
-<div class="page-narrow text-center py-5">
-    <h1 class="detail-title">{% if signed_out %}You're signed out{% else %}Simpli Budget{% endif %}</h1>
-    <p class="text-body-secondary mt-2">
-        A monthly budget that keeps itself current: bank transactions sync in automatically and land in the right category.
-    </p>
-    <div class="d-grid gap-2 mt-4 mx-auto" style="max-width: 320px;">
-        <a href="{{ google_login_url }}" class="btn btn-primary">Sign in with Google</a>
+<div class="landing">
+    {% if signed_out %}
+    <p class="landing-notice" role="status">You're signed out.</p>
+    {% endif %}
+
+    <section class="landing-hero">
+        <p class="eyebrow text-body-secondary mb-3">Personal budgeting</p>
+        <h1 class="landing-title">Know where every dollar went, without typing in a single transaction.</h1>
+        <p class="landing-lede">
+            Simpli Budget pulls in your bank and credit card activity, sorts it into your categories, and shows
+            you exactly how this month is tracking against your plan.
+        </p>
+        <div class="landing-actions">
+            <a href="{{ google_login_url }}" class="btn btn-primary btn-lg">Sign in with Google</a>
+            {% if demo_enabled %}
+            <a href="/demo" class="btn btn-outline-secondary btn-lg">Try the demo</a>
+            {% endif %}
+        </div>
         {% if demo_enabled %}
-        <a href="/demo" class="btn btn-outline-secondary">Try the demo</a>
-        <p class="small text-body-secondary mt-1 mb-0">No account needed. Look around a sample household's budget.</p>
+        <p class="small text-body-secondary mt-2 mb-0">The demo needs no account: look around a sample household's budget.</p>
         {% endif %}
-    </div>
+    </section>
+
+    <section class="landing-showcase" aria-label="Screenshots of the monthly budget">
+        <img class="shot shot-desktop" src="{% static 'landing/img/overview-desktop.jpg' %}" width="2560" height="1600"
+             alt="The monthly budget overview: income, spent and left this month, then each category's spending against its budget with a progress bar.">
+        <img class="shot shot-phone" src="{% static 'landing/img/overview-phone.jpg' %}" width="780" height="1688"
+             alt="The same monthly budget overview on a phone, with a bottom tab bar.">
+    </section>
+
+    <section class="landing-features" aria-labelledby="features-heading">
+        <h2 id="features-heading" class="landing-section-title">Everything a monthly budget needs</h2>
+        <div class="feature-grid">
+            <div class="feature">
+                <h3>Bank sync</h3>
+                <p>Link your accounts once through Plaid, and new transactions arrive every night on their own.</p>
+            </div>
+            <div class="feature">
+                <h3>Automatic categories</h3>
+                <p>Rules sort transactions as they come in, matching on the name ("starts with Shell") or the amount.</p>
+            </div>
+            <div class="feature">
+                <h3>The month at a glance</h3>
+                <p>Income, spending and what's left up top, then every category against its budget, with overspending flagged.</p>
+            </div>
+            <div class="feature">
+                <h3>Budgets that roll forward</h3>
+                <p>Give each category a default monthly amount, then adjust any single month without touching the rest.</p>
+            </div>
+            <div class="feature">
+                <h3>Spending alerts</h3>
+                <p>Pick the categories you care about and get a summary by Discord or email, as often as you like.</p>
+            </div>
+            <div class="feature">
+                <h3>Built for your phone</h3>
+                <p>The same budget on any screen, with a tab bar on mobile and light and dark themes.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="feature-row" aria-labelledby="transactions-heading">
+        <div class="feature-row-text">
+            <p class="eyebrow text-body-secondary mb-2">Transactions</p>
+            <h2 id="transactions-heading" class="landing-section-title">Find any purchase in seconds</h2>
+            <p>
+                Every transaction from every account in one list, grouped by day. Search by name, filter by date,
+                category, account or tag, jump straight to what still needs a category, and export what you find.
+            </p>
+        </div>
+        <img class="shot" src="{% static 'landing/img/transactions-desktop.jpg' %}" width="2000" height="1520" loading="lazy"
+             alt="The transactions page: a search box, quick filters for this month and uncategorized, and transactions grouped by day.">
+    </section>
+
+    <section class="feature-row feature-row-flip" aria-labelledby="category-heading">
+        <div class="feature-row-text">
+            <p class="eyebrow text-body-secondary mb-2">Categories</p>
+            <h2 id="category-heading" class="landing-section-title">See what's behind every number</h2>
+            <p>
+                Open any category to see what you spent, what you budgeted, and the transactions that got you there.
+                Recategorize one right from the list, and tag transactions to follow things like a trip across
+                categories.
+            </p>
+        </div>
+        <img class="shot" src="{% static 'landing/img/category-desktop.jpg' %}" width="2000" height="1520" loading="lazy"
+             alt="A category detail page for Groceries: spent, budgeted and over amounts, and the month's grocery transactions.">
+    </section>
+
+    <section class="landing-cta">
+        <h2 class="landing-section-title">Ready to see your own month?</h2>
+        <div class="landing-actions">
+            <a href="{{ google_login_url }}" class="btn btn-primary btn-lg">Sign in with Google</a>
+            {% if demo_enabled %}
+            <a href="/demo" class="btn btn-outline-secondary btn-lg">Try the demo</a>
+            {% endif %}
+        </div>
+    </section>
 </div>
 {% endblock %}
