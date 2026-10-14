@@ -1,4 +1,4 @@
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.contrib.auth import logout
 from django.views import View
 from simpli_budget.views.categories import Categories, Category
@@ -13,4 +13,13 @@ from simpli_budget.views.notifications import Notifications
 class Logout(View):
     def get(self, request):
         logout(request)
-        return redirect("/accounts/google/login")
+        # Not straight to the Google login: with SOCIALACCOUNT_LOGIN_ON_GET, Google silently signs the
+        # browser's account back in, so logging out looked like it did nothing.
+        return redirect("logged_out")
+
+
+class LoggedOut(View):
+    def get(self, request):
+        if request.user.is_authenticated:
+            return redirect("/")
+        return render(request, "logged_out.html")

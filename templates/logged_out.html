@@ -1,0 +1,9 @@
+{% extends "_layout.html" %}
+{% block title %}Signed out{% endblock %}
+{% block body %}
+<div class="page-narrow text-center py-5">
+    <h1 class="detail-title">You're signed out</h1>
+    <p class="text-body-secondary mt-2">Sign back in with Google, or pick a different account.</p>
+    <a href="/accounts/google/login?auth_params=prompt%3Dselect_account" class="btn btn-primary mt-3">Sign in with Google</a>
+</div>
+{% endblock %}

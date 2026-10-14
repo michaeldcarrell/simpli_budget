@@ -35,6 +35,7 @@ urlpatterns = [
     path("notifications", views.Notifications.as_view(), name="notifications"),
     path("settings", RedirectView.as_view(url="/notifications")),  # old name, kept for bookmarks
     path("logout", views.Logout.as_view(), name="logout"),
+    path("logged-out", views.LoggedOut.as_view(), name="logged_out"),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
