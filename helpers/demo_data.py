@@ -14,6 +14,9 @@ from simpli_budget.models import (
     Accounts,
     Transactions,
     Date,
+    RuleSet,
+    Rule,
+    RuleMatchType,
 )
 
 DEMO_GROUP_NAME = "Demo Household"
@@ -151,6 +154,18 @@ CATEGORY_TYPE_PROFILES = [
     },
 ]
 
+# Example auto-categorization rules for the demo's Rules page. A rule set assigns its category when every one
+# of its conditions matches (airflow/classes/budget/rule_processor.py); each one here shows off a different
+# kind of condition. Conditions are (match type name, value) - amount conditions compare the raw signed
+# amount, so they're only used on spending, which is positive.
+DEMO_RULE_SETS = [
+    {"name": "Payroll deposits", "category": "Paycheck", "conditions": [("contains", "Payroll")]},
+    {"name": "Rent payment", "category": "Rent", "conditions": [("exact", "Skyline Apartments")]},
+    {"name": "Trader Joe's", "category": "Groceries", "conditions": [("starts_with", "Trader Joe")]},
+    {"name": "Coffee runs", "category": "Restaurants", "conditions": [("contains", "Starbucks"), ("lt_amount", 15)]},
+    {"name": "Uber rides", "category": "Rideshare", "conditions": [("exact", "Uber"), ("lt_amount", 60)]},
+]
+
 
 def _get_or_create_group() -> Group:
     from django.conf import settings
@@ -217,6 +232,31 @@ def _ensure_categories(group: Group) -> tuple[dict, dict]:
             )
             categories[category_profile["name"]] = category
     return categories, category_types
+
+
+def ensure_demo_rules(group: Group, categories: dict) -> list:
+    """Creates any of DEMO_RULE_SETS the group doesn't have yet (matched by name); returns the ones created."""
+    match_types = {match_type.name: match_type for match_type in RuleMatchType.objects.all()}
+    created = []
+    for rule_set_profile in DEMO_RULE_SETS:
+        if RuleSet.objects.filter(group=group, name=rule_set_profile["name"]).exists():
+            continue
+        with db_transaction.atomic():
+            rule_set = RuleSet.objects.create(
+                group=group,
+                name=rule_set_profile["name"],
+                default_category=categories[rule_set_profile["category"]],
+            )
+            for match_type_name, value in rule_set_profile["conditions"]:
+                match_type = match_types[match_type_name]
+                Rule.objects.create(
+                    set=rule_set,
+                    match_type=match_type,
+                    match_string=value if match_type.value_type == "string" else None,
+                    match_number=value if match_type.value_type == "numeric" else None,
+                )
+        created.append(rule_set)
+    return created
 
 
 def _ensure_category_month(category: Categories, year_month: int, amount: float) -> None:
@@ -321,6 +361,7 @@ def seed_demo_account(months_back: int = 3) -> Group:
     group = _get_or_create_group()
     accounts = _ensure_accounts(group)
     categories, category_types = _ensure_categories(group)
+    ensure_demo_rules(group, categories)
 
     today = dt.now(tz=UTC).replace(day=1)
     year_months = [
