@@ -22,7 +22,7 @@ let onboardingController = function() {
             selector: '.category-month-row',
             placement: 'top',
             title: 'Your categories',
-            body: 'Each row is a budget category for the month. Tap one to change what you budgeted, for just this month or as the default, or to see its transactions.'
+            body: 'Each row is a budget category for the month. Tap one to see its transactions, then tap Budgeted at the top to change what you budgeted, for just this month or as the default.'
         },
         {
             page: '/transactions/search',

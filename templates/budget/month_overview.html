@@ -53,20 +53,9 @@
             <span class="num small text-body-secondary">{{ section.spent_display }} / {{ section.target_display }}</span>
         </div>
         {% for row in section.rows %}
-        <button
-            type="button"
+        <a
             class="ledger-row category-month-row"
-            data-bs-toggle="offcanvas"
-            data-bs-target="#budget-sheet"
-            data-category-id="{{ row.category_id }}"
-            data-year-month="{{ budget_month.year_month }}"
-            data-name="{{ row.name }}"
-            data-amount="{{ row.target|floatformat:2 }}"
-            data-default="{{ row.category_month.category.default_monthly_amount|default_if_none:0|floatformat:2 }}"
-            data-spent="{{ row.spent_display }}"
-            data-average="{{ row.average_display|default_if_none:'' }}"
-            data-is-override="{% if row.is_override %}true{% else %}false{% endif %}"
-            data-is-income="{% if section.is_income %}true{% else %}false{% endif %}"
+            href="/budget/category/{{ row.category_id }}?month={{ budget_month.year_month }}"
         >
             <span class="ledger-name">
                 {{ row.name }}
@@ -83,75 +72,13 @@
             {% else %}
             <span class="ledger-status-none">Not budgeted</span>
             {% endif %}
-        </button>
+        </a>
         {% endfor %}
     </section>
     {% endfor %}
 </div>
 
-<div class="offcanvas offcanvas-bottom app-sheet" tabindex="-1" id="budget-sheet" aria-labelledby="budget-sheet-title">
-    <div class="sheet-handle" aria-hidden="true"></div>
-    <div class="offcanvas-header pb-0 align-items-start">
-        <div>
-            <h2 class="offcanvas-title fs-5 fw-semibold" id="budget-sheet-title">Category</h2>
-            <p class="small text-body-secondary mb-0">Budgeted for {{ budget_month.month.name }}</p>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-    <div class="offcanvas-body">
-        <form id="budget-sheet-form" class="d-flex flex-column gap-3" novalidate>
-            <div>
-                <label for="budget-sheet-amount" class="stat-label d-block mb-1">Amount</label>
-                <div class="budget-amount-field">
-                    <span class="num" aria-hidden="true">$</span>
-                    <input id="budget-sheet-amount" type="text" inputmode="decimal" class="num" autocomplete="off" required>
-                </div>
-            </div>
-
-            <div class="stat-strip">
-                <div>
-                    <span class="stat-label" id="budget-sheet-spent-label">Spent</span>
-                    <span class="stat-value" id="budget-sheet-spent"></span>
-                </div>
-                <div>
-                    <span class="stat-label">3-mo avg</span>
-                    <span class="stat-value" id="budget-sheet-average"></span>
-                </div>
-                <div>
-                    <span class="stat-label">Default</span>
-                    <span class="stat-value" id="budget-sheet-default"></span>
-                </div>
-            </div>
-
-            <fieldset class="d-flex flex-column gap-2">
-                <legend class="stat-label mb-1">Applies to</legend>
-                <label class="choice-card">
-                    <input type="radio" name="budget-sheet-scope" value="month" checked>
-                    <span>
-                        <span class="d-block fw-medium">{{ budget_month.month.start_of_month_date.month_name }} only</span>
-                        <span class="d-block small text-body-secondary">Other months keep the default</span>
-                    </span>
-                </label>
-                <label class="choice-card">
-                    <input type="radio" name="budget-sheet-scope" value="default">
-                    <span>
-                        <span class="d-block fw-medium">Change the default</span>
-                        <span class="d-block small text-body-secondary">This month and every month without its own amount</span>
-                    </span>
-                </label>
-            </fieldset>
-
-            <button id="budget-sheet-reset" type="button" class="btn btn-link p-0 align-self-start hidden">Use the default for this month instead</button>
-
-            <div class="d-grid gap-2" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
-                <a id="budget-sheet-transactions" class="btn btn-outline-secondary d-flex align-items-center justify-content-center" href="#">View transactions</a>
-                <button type="submit" class="btn btn-primary num">SAVE</button>
-            </div>
-        </form>
-    </div>
-</div>
 {% endblock %}
 {% block scripts %}
-    <script src="{% static "budget/classes/CategoryMonth.js" %}"></script>
     <script src="{% static "budget/js/month_overview.js" %}"></script>
 {% endblock %}

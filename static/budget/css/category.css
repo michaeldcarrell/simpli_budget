@@ -47,3 +47,53 @@
         width: 100%;
     }
 }
+
+/* The Budgeted stat doubles as the button that opens the budget sheet. */
+.stat-strip > .stat-edit-cell {
+    padding: 0;
+}
+
+.stat-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    height: 100%;
+    min-height: 44px;
+    padding: 12px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--sb-ink);
+    text-align: left;
+    font: inherit;
+}
+
+.stat-edit:hover {
+    background: var(--sb-surface-2);
+}
+
+.stat-edit:focus-visible {
+    outline: 2px solid var(--sb-accent);
+    outline-offset: -2px;
+}
+
+.stat-strip .stat-edit .stat-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--sb-accent);
+}
+
+.stat-edit .stat-value {
+    text-decoration: underline dashed var(--sb-line);
+    text-underline-offset: 4px;
+}
+
+.stat-edit .stat-note {
+    font-family: var(--sb-font-mono);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--sb-muted);
+}

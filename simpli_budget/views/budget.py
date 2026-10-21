@@ -41,6 +41,7 @@ class BudgetCategory(LoginRequiredMixin, View):
         budgeted = category_month.amount or 0
         is_income = bool(category.category_type.invert_amounts)
         month_start = category_month.month.start_of_month_date
+        _set_monthly_averages(group_id, [{'categories': [category]}])
         context = {
             "title": f"{category.category_name} - {category_month.month.name_short}",
             "category_month": category_month,
@@ -52,6 +53,11 @@ class BudgetCategory(LoginRequiredMixin, View):
             'left_label': ('Above' if spent >= budgeted else 'To go') if is_income else ('Over' if spent > budgeted else 'Left'),
             'left_is_over': not is_income and spent > budgeted,
             'month_label': f"{month_start.month_name_short} {month_start.year}".upper(),
+            'month_name': month_start.month_name,
+            'budgeted_amount': f"{budgeted:.2f}",
+            'is_override': category_month.is_override,
+            'default_display': _num(category.default_monthly_amount or 0),
+            'average_display': _num(category.monthly_average) if category.monthly_average is not None else '—',
         }
 
         return render(request, template_name="budget/category.html", context=context)
