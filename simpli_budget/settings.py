@@ -103,6 +103,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "simpli_budget.middleware.SetUserAttributeDefaults",
     "simpli_budget.middleware.DemoReadOnly",
+    "simpli_budget.middleware.ApiEventLog",
 ]
 
 ROOT_URLCONF = "simpli_budget.urls"

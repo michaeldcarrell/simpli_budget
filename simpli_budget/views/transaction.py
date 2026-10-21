@@ -59,7 +59,7 @@ class Transaction(LoginRequiredMixin, View):
             'transaction': transaction,
             'categories': categories,
             'transaction_tags': current_transaction_tags,
-            'amount_display': f"{'+' if is_inflow else ''}{abs(amount):,.2f}",
+            'amount_display': f"{'+' if is_inflow else ''}${abs(amount):,.2f}",
             'is_inflow': is_inflow,
             'details': [
                 ('Date', transaction.date.date.strftime('%a %b %-d, %Y')),

@@ -86,6 +86,27 @@ def get_user_group(user: settings.AUTH_USER_MODEL, request = None) -> Group:
     return group_user.group
 
 
+class ApiEvent(models.Model):
+    """One write made through the JSON API, recorded by the ApiEventLog middleware (DDL in sql/log_schema.sql)."""
+    api_event_id = models.BigAutoField(primary_key=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING, null=True)
+    group_id = models.IntegerField(null=True)
+    method = models.TextField(null=False)
+    path = models.TextField(null=False)
+    view_name = models.TextField(null=True)
+    url_kwargs = models.JSONField(null=True)
+    query_params = models.JSONField(null=True)
+    request_body = models.JSONField(null=True)
+    status_code = models.SmallIntegerField(null=False)
+    response_body = models.JSONField(null=True)
+    duration_ms = models.IntegerField(null=True)
+
+    class Meta:
+        managed = False
+        db_table = '"log"."api_event"'
+
+
 class GroupUser(models.Model):
     group_user_id = models.AutoField(primary_key=True)
     group = models.ForeignKey(Group, on_delete=models.DO_NOTHING, null=False)
