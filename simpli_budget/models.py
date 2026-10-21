@@ -107,6 +107,36 @@ class ApiEvent(models.Model):
         db_table = '"log"."api_event"'
 
 
+class ChatSession(models.Model):
+    """One budget assistant conversation for a user in a group (DDL in sql/log_schema.sql)."""
+    chat_session_id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING, null=False)
+    group_id = models.IntegerField(null=False)
+    created_at = models.DateTimeField(auto_now_add=True, null=False)
+    last_message_at = models.DateTimeField(null=False)
+    ended_at = models.DateTimeField(null=True)
+
+    class Meta:
+        managed = False
+        db_table = '"log"."chat_session"'
+
+
+class ChatMessage(models.Model):
+    """A user question or assistant answer in a ChatSession. Answers with an error are never sent back to the model."""
+    chat_message_id = models.BigAutoField(primary_key=True)
+    chat_session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, null=False)
+    role = models.TextField(null=False)
+    content = models.TextField(null=False)
+    page = models.JSONField(null=True)
+    tools_used = models.JSONField(null=True)
+    error = models.TextField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=False)
+
+    class Meta:
+        managed = False
+        db_table = '"log"."chat_message"'
+
+
 class GroupUser(models.Model):
     group_user_id = models.AutoField(primary_key=True)
     group = models.ForeignKey(Group, on_delete=models.DO_NOTHING, null=False)

@@ -8,8 +8,9 @@ let chatController = function() {
         resetBtn: document.getElementById('chat-reset-btn'),
     }
 
-    // Plain-text user/assistant turns only; the server re-runs its own lookups for each question.
-    let history = [];
+    // The conversation is kept on the server, so it follows the user across pages; it's fetched the first
+    // time the panel opens on each page.
+    let loaded = false;
     let busy = false;
 
     let renderMarkdown = function(element, text) {
@@ -35,6 +36,18 @@ let chatController = function() {
         objs.resetBtn.disabled = value;
     }
 
+    let addError = function(bubble, text) {
+        let error = document.createElement('div');
+        error.classList.add('text-danger', 'small', 'mt-1');
+        error.textContent = text;
+        bubble.appendChild(error);
+    }
+
+    let clearMessages = function() {
+        objs.messages.querySelectorAll('.chat-bubble').forEach(bubble => bubble.remove());
+        objs.emptyHint.classList.remove('hidden');
+    }
+
     let groupQuery = function() {
         let groupId = getQueryParamValue('group_id');
         return groupId ? `?group_id=${encodeURIComponent(groupId)}` : '';
@@ -43,7 +56,6 @@ let chatController = function() {
     let send = async function(text) {
         setBusy(true);
         addBubble('user').textContent = text;
-        history.push({role: 'user', content: text});
 
         let bubble = addBubble('assistant');
         let body = document.createElement('div');
@@ -55,7 +67,6 @@ let chatController = function() {
 
         let answer = '';
         let newParagraph = false;
-        let failed = false;
 
         let handleEvent = function(event) {
             if (event.type === 'text') {
@@ -71,11 +82,7 @@ let chatController = function() {
                 status.textContent = `${event.text}...`;
                 return;
             } else if (event.type === 'error') {
-                failed = true;
-                let error = document.createElement('div');
-                error.classList.add('text-danger', 'small', 'mt-1');
-                error.textContent = event.text;
-                bubble.appendChild(error);
+                addError(bubble, event.text);
             }
             status.textContent = '';
             scrollToBottom();
@@ -90,7 +97,7 @@ let chatController = function() {
                 },
                 // Lets the assistant read "this month"/"this category" as whatever page is open.
                 body: JSON.stringify({
-                    messages: history,
+                    message: text,
                     page: {path: window.location.pathname, month: getQueryParamValue('month') || null},
                 })
             });
@@ -117,12 +124,6 @@ let chatController = function() {
         }
 
         status.remove();
-        if (answer && !failed) {
-            history.push({role: 'assistant', content: answer});
-        } else {
-            // Drop the unanswered question so the next request still alternates user/assistant turns.
-            history.pop();
-        }
         setBusy(false);
         objs.input.focus();
     }
@@ -144,14 +145,55 @@ let chatController = function() {
         }
     });
 
-    objs.resetBtn.addEventListener('click', function() {
-        history = [];
-        objs.messages.querySelectorAll('.chat-bubble').forEach(bubble => bubble.remove());
-        objs.emptyHint.classList.remove('hidden');
+    let load = async function() {
+        loaded = true;
+        setBusy(true);
+        try {
+            let res = await fetch(`/api/chat${groupQuery()}`);
+            if (!res.ok) {
+                throw new Error(res.statusText);
+            }
+            let data = await res.json();
+            if (data.messages.length) {
+                clearMessages();
+            }
+            data.messages.forEach(message => {
+                let bubble = addBubble(message.role);
+                if (message.role === 'user') {
+                    bubble.textContent = message.content;
+                    return;
+                }
+                if (message.content) {
+                    let body = document.createElement('div');
+                    renderMarkdown(body, message.content);
+                    bubble.appendChild(body);
+                }
+                if (message.error) {
+                    addError(bubble, message.error);
+                }
+            });
+            scrollToBottom();
+        } catch (e) {
+            // Try again next time the panel opens.
+            loaded = false;
+        }
+        setBusy(false);
+    }
+
+    objs.resetBtn.addEventListener('click', async function() {
+        setBusy(true);
+        await fetch(`/api/chat${groupQuery()}`, {
+            method: 'DELETE',
+            headers: {'X-CSRFToken': getCSRFToken()},
+        }).catch(() => {});
+        clearMessages();
+        setBusy(false);
         objs.input.focus();
     });
 
-    document.getElementById('chat-panel').addEventListener('shown.bs.offcanvas', () => objs.input.focus());
+    let panel = document.getElementById('chat-panel');
+    panel.addEventListener('show.bs.offcanvas', () => { if (!loaded) { load(); } });
+    panel.addEventListener('shown.bs.offcanvas', () => objs.input.focus());
 }
 
 chatController();

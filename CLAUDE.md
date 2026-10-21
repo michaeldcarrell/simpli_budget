@@ -55,6 +55,8 @@ Money columns are stored as `TEXT` in Postgres (e.g. `_amount`, `_balance`, `def
 
 Every API write (POST/PUT/PATCH/DELETE under `/api/`, except the read-only transaction search and chat POSTs, and never for the demo user) is recorded in `log.api_event` by the `ApiEventLog` middleware (`simpli_budget/middleware.py`, model `ApiEvent`): user, group, view name, URL kwargs, request/response JSON with token-like keys redacted, status, and duration. Its DDL lives in `sql/log_schema.sql`. Query it when you need the history of who changed what.
 
+The budget assistant (`ChatAPI` in `api/views.py`, logic in `helpers/chat.py`) keeps conversations in `log.chat_session` / `log.chat_message` (models `ChatSession`, `ChatMessage`, same DDL file), not the browser, so a conversation follows the user across pages: GET redraws it, POST sends only the new question, DELETE ("New chat") ends the session, and a session idle for `CHAT_SESSION_IDLE` ends on its own. Every message is kept, but only a window goes back to the model (`context_messages`): completed question/answer text pairs up to `MAX_HISTORY_MESSAGES` / `MAX_HISTORY_CHARS`, never tool results and never failed answers. The assistant's `get_change_history` tool reads `log.api_event` for one transaction or category, scoped by checking the record belongs to the chat's group (the event's own `group_id` is only the requester's group).
+
 `TransactionSearch` (`simpli_budget/models.py`) maps to a Postgres view (`budget.transaction_search`) that pre-joins transaction/account/category/tag data for the paginated search API (`api/views.py: TransactionsAPI`) — it's read-only and denormalized specifically to make that filtering/ordering fast.
 
 ### Multi-tenancy via Group

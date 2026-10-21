@@ -7,19 +7,23 @@ request was authorized for.
 """
 import json
 from collections import defaultdict
-from datetime import date, datetime as dt
+from datetime import date, datetime as dt, timedelta
 
 import anthropic
 from django.conf import settings
 from django.db.models import DecimalField, FloatField, Q
 from django.db.models.functions import Cast
 from django.urls import Resolver404, resolve
+from django.utils import timezone
 
 from simpli_budget.models import (
     Accounts,
+    ApiEvent,
     Categories,
     CategoryMonth,
     CategoryType,
+    ChatMessage,
+    ChatSession,
     Group,
     Tag,
     TransactionTag,
@@ -28,9 +32,15 @@ from simpli_budget.models import (
 )
 
 MAX_TOOL_ROUNDS = 10
+# What's sent back to the model each turn: at most this many earlier messages, and at most this many characters
+# of them (roughly 6k tokens). Tool results are never kept, so this is plain question/answer text only.
 MAX_HISTORY_MESSAGES = 20
+MAX_HISTORY_CHARS = 24_000
 MAX_MESSAGE_CHARS = 4000
+# A session with no messages for this long is over; the next question starts a new one.
+CHAT_SESSION_IDLE = timedelta(hours=12)
 SEARCH_LIMIT_MAX = 100
+HISTORY_LIMIT = 50
 
 SYSTEM_PROMPT = """You are the budgeting assistant inside Simpli Budget, a household budgeting app. \
 You answer questions about the household's own budget, spending, income, accounts, and transactions \
@@ -49,6 +59,11 @@ the category's default monthly amount.
 - Category 0 is "Uncategorized"; category -1 is "Hidden" (transactions the household chose to exclude, \
 such as transfers between their own accounts). Leave Hidden out of spending totals unless asked about it.
 - Transactions marked `pending` have not posted yet and may still change.
+- Changes people make in the app (recategorizing or retagging a transaction, editing a category or its \
+budget) are logged; get_change_history returns them for one transaction or category. The log only goes back \
+to when it was switched on, so an empty history means no logged change, not that nothing ever changed - \
+say that rather than claiming the record was never edited. Times are UTC. Changes made outside the app \
+(bank imports, automatic categorization rules) aren't in it.
 
 How to answer:
 - Look the data up with the tools; never guess or invent numbers. If the tools can't answer the \
@@ -211,6 +226,23 @@ class BudgetTools:
                     'additionalProperties': False,
                 },
             },
+            {
+                'name': 'get_change_history',
+                'description': 'The logged changes people made in the app to one transaction (category and tag '
+                               'changes) or one category (budget amounts, default budget, name/settings, '
+                               'notifications), oldest first, with when (UTC), who, and what was set. Pass exactly '
+                               'one of transaction_id or category_id. Use for "when did this change" or "who '
+                               'changed this" questions.',
+                'eager_input_streaming': True,
+                'input_schema': {
+                    'type': 'object',
+                    'properties': {
+                        'transaction_id': {'type': 'string'},
+                        'category_id': {'type': 'integer'},
+                    },
+                    'additionalProperties': False,
+                },
+            },
         ]
 
     # --- dispatch -----------------------------------------------------------------------------
@@ -225,6 +257,7 @@ class BudgetTools:
             'get_month_budget': self.get_month_budget,
             'category_totals': self.category_totals,
             'search_transactions': self.search_transactions,
+            'get_change_history': self.get_change_history,
         }.get(name)
         if handler is None:
             raise ToolInputError(f'unknown tool {name}')
@@ -453,6 +486,7 @@ class BudgetTools:
             'returned': len(page),
             'transactions': [
                 {
+                    'transaction_id': t.transaction_id,
                     'date': t.date_id,
                     'name': t.name,
                     'merchant_name': t.merchant_name,
@@ -466,28 +500,121 @@ class BudgetTools:
             ],
         }
 
+    def get_change_history(self, transaction_id=None, category_id=None):
+        if (transaction_id is None) == (category_id is None):
+            raise ToolInputError('pass exactly one of transaction_id or category_id')
+        # The log's group_id is only the requester's group, so scope by the record instead: check it
+        # belongs to this group, then match the id the endpoint was called with.
+        if transaction_id is not None:
+            if not self._group_transactions().filter(transaction_id=str(transaction_id)).exists():
+                raise ToolInputError('no transaction with that id in this household')
+            events = ApiEvent.objects.filter(url_kwargs__transaction_id=str(transaction_id))
+        else:
+            category = _group_category(self.group, category_id)
+            if category is None:
+                raise ToolInputError('no category with that id in this household')
+            events = ApiEvent.objects.filter(url_kwargs__category_id=category.category_id)
 
-def clean_chat_history(history) -> list[dict]:
+        events = list(
+            events.filter(status_code__gte=200, status_code__lt=300)
+                .select_related('user')
+                .order_by('-created_at')[:HISTORY_LIMIT]
+        )[::-1]
+        bodies = [e.request_body if isinstance(e.request_body, dict) else {} for e in events]
+        tag_names = dict(Tag.objects.filter(
+            tag_id__in={tag_id for body in bodies for tag_id in body.get('tag_ids') or [] if isinstance(tag_id, int)}
+        ).values_list('tag_id', 'name'))
+        category_info = self._category_info(
+            body['category_id'] for body in bodies if isinstance(body.get('category_id'), int)
+        )
+
+        changes = []
+        for event, body in zip(events, bodies):
+            change = {
+                'when_utc': event.created_at.strftime('%Y-%m-%d %H:%M'),
+                'who': (event.user.first_name or event.user.username) if event.user else 'a deleted user',
+                'action': CHANGE_ACTIONS.get((event.view_name, event.method), f'{event.method} {event.view_name}'),
+            }
+            if 'tag_ids' in body:
+                change['tags_after'] = [tag_names.get(tag_id, f'tag {tag_id}') for tag_id in body['tag_ids'] or []]
+            elif event.view_name == 'Transaction Category' and 'category_id' in body:
+                change['category_after'] = category_info.get(body['category_id'], {}).get(
+                    'category_name', f'category {body["category_id"]}')
+            elif body:
+                change['values'] = body
+            changes.append(change)
+        return {
+            'changes': changes,
+            'note': None if changes else 'No logged changes. The log only covers changes made since it was switched on.',
+        }
+
+
+CHANGE_ACTIONS = {
+    ('Transaction Category', 'POST'): 'changed the transaction\'s category',
+    ('Transaction Tags', 'POST'): 'changed the transaction\'s tags',
+    ('Category Delete', 'PUT'): 'edited the category',
+    ('Category Delete', 'DELETE'): 'deleted the category',
+    ('Category Month', 'POST'): 'set this month\'s budget for the category',
+    ('Category Month', 'DELETE'): 'reset the month\'s budget to the category default',
+    ('Notification Category', 'PUT'): 'changed the category\'s notifications',
+}
+
+
+def clean_question(text) -> str:
+    if not isinstance(text, str) or not text.strip():
+        raise ToolInputError('message must be non-empty text')
+    return text.strip()[:MAX_MESSAGE_CHARS]
+
+
+def active_session(user, group: Group, create: bool = False) -> ChatSession | None:
+    """The user's current conversation in this group, ending it if it has been idle too long."""
+    now = timezone.now()
+    session = (
+        ChatSession.objects
+            .filter(user=user, group_id=group.group_id, ended_at__isnull=True)
+            .order_by('-last_message_at')
+            .first()
+    )
+    if session and session.last_message_at < now - CHAT_SESSION_IDLE:
+        session.ended_at = now
+        session.save(update_fields=['ended_at'])
+        session = None
+    if session is None and create:
+        session = ChatSession.objects.create(user=user, group_id=group.group_id, last_message_at=now)
+    return session
+
+
+def end_session(user, group: Group):
+    ChatSession.objects.filter(user=user, group_id=group.group_id, ended_at__isnull=True).update(ended_at=timezone.now())
+
+
+def session_transcript(session: ChatSession | None) -> list[dict]:
+    """The session's messages for redrawing the chat panel, oldest first."""
+    if session is None:
+        return []
+    rows = list(session.chatmessage_set.order_by('-chat_message_id')[:100])[::-1]
+    return [{'role': m.role, 'content': m.content, 'error': m.error} for m in rows]
+
+
+def context_messages(session: ChatSession) -> list[dict]:
     """
-    Validate the client-supplied conversation. Only plain-text user/assistant turns are accepted, so a
-    client can't inject fake tool results; the tool loop for each question runs fresh on the server.
+    The earlier turns to send with a new question: the newest completed question/answer pairs that fit in
+    MAX_HISTORY_MESSAGES and MAX_HISTORY_CHARS. Questions whose answer failed or never arrived are skipped, so
+    the turns always alternate user/assistant.
     """
-    if not isinstance(history, list) or not history:
-        raise ToolInputError('messages must be a non-empty list')
-    cleaned = []
-    for message in history[-MAX_HISTORY_MESSAGES:]:
-        if not isinstance(message, dict):
-            raise ToolInputError('each message must be an object')
-        role = message.get('role')
-        content = message.get('content')
-        if role not in ('user', 'assistant') or not isinstance(content, str) or not content.strip():
-            raise ToolInputError('each message needs a role of user/assistant and non-empty text content')
-        cleaned.append({'role': role, 'content': content[:MAX_MESSAGE_CHARS]})
-    while cleaned and cleaned[0]['role'] != 'user':
-        cleaned.pop(0)
-    if not cleaned or cleaned[-1]['role'] != 'user':
-        raise ToolInputError('the last message must be from the user')
-    return cleaned
+    rows = list(session.chatmessage_set.order_by('-chat_message_id')[:MAX_HISTORY_MESSAGES * 2])[::-1]
+    pairs = []
+    for question, answer in zip(rows, rows[1:]):
+        if (question.role, answer.role) == ('user', 'assistant') and answer.content and not answer.error:
+            pairs.append((question.content[:MAX_MESSAGE_CHARS], answer.content[:MAX_MESSAGE_CHARS]))
+
+    kept, chars = [], 0
+    for question, answer in reversed(pairs):
+        chars += len(question) + len(answer)
+        if len(kept) + 2 > MAX_HISTORY_MESSAGES or chars > MAX_HISTORY_CHARS:
+            break
+        kept[:0] = [{'role': 'user', 'content': question}, {'role': 'assistant', 'content': answer}]
+    return kept
 
 
 TOOL_STATUS = {
@@ -497,6 +624,7 @@ TOOL_STATUS = {
     'get_month_budget': 'Checking the monthly budget',
     'category_totals': 'Adding up category totals',
     'search_transactions': 'Searching transactions',
+    'get_change_history': 'Checking the change history',
 }
 
 
@@ -569,15 +697,16 @@ def describe_page(group: Group, page) -> str | None:
         )
         if transaction:
             return (f'the detail page for the transaction {json.dumps(transaction.name)} on {transaction.date_id} '
-                    f'(raw amount {transaction.amount}, category {json.dumps(transaction.category.category_name)})')
+                    f'(transaction_id {transaction.transaction_id}, raw amount {transaction.amount}, '
+                    f'category {json.dumps(transaction.category.category_name)})')
     return PAGE_LABELS.get(name)
 
 
 def stream_chat(group: Group, messages: list[dict], page=None):
     """
-    Run the tool-use loop for the latest user message (messages from clean_chat_history) and yield UI
+    Run the tool-use loop for the latest user message (earlier turns from context_messages) and yield UI
     events as dicts:
-      {'type': 'status', 'text': ...}   a tool is running
+      {'type': 'status', 'text': ..., 'tool': ...}   a tool is running
       {'type': 'text', 'text': ...}     a chunk of the answer
       {'type': 'error', 'text': ...}    something went wrong; the answer is incomplete
       {'type': 'done'}
@@ -638,7 +767,7 @@ def stream_chat(group: Group, messages: list[dict], page=None):
         messages.append({'role': 'assistant', 'content': response.content})
         tool_results = []
         for tool_use in tool_uses:
-            yield {'type': 'status', 'text': TOOL_STATUS.get(tool_use.name, 'Looking things up')}
+            yield {'type': 'status', 'text': TOOL_STATUS.get(tool_use.name, 'Looking things up'), 'tool': tool_use.name}
             try:
                 content = tools.run(tool_use.name, tool_use.input)
                 tool_results.append({'type': 'tool_result', 'tool_use_id': tool_use.id, 'content': content})

@@ -35,7 +35,17 @@ from simpli_budget.models import (
 )
 from helpers.plaid import Plaid
 from helpers.demo_data import generate_recent_activity
-from helpers.chat import chat_allowed, clean_chat_history, stream_chat, ToolInputError
+from django.utils import timezone
+from helpers.chat import (
+    active_session,
+    chat_allowed,
+    clean_question,
+    context_messages,
+    end_session,
+    session_transcript,
+    stream_chat,
+    ToolInputError,
+)
 from simpli_budget.context_processors import THEMES
 from simpli_budget.middleware import DEMO_READ_ONLY_MESSAGE
 
@@ -737,25 +747,75 @@ class DemoGenerateActivityAPI(APIView):
 
 
 class ChatAPI(APIView):
+    """
+    The budget assistant. The conversation lives in log.chat_session/chat_message rather than the browser, so
+    it follows the user from page to page: GET redraws it, POST asks the next question, DELETE starts over.
+    """
     authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def __allowed_group(self, request):
         group = get_user_group(request.user, request)
-        if not chat_allowed(request.user, group):
+        return group if chat_allowed(request.user, group) else None
+
+    def get(self, request):
+        group = self.__allowed_group(request)
+        if group is None:
+            return Response(data={'message': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(data={'messages': session_transcript(active_session(request.user, group))})
+
+    def delete(self, request):
+        group = self.__allowed_group(request)
+        if group is None:
+            return Response(data={'message': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        end_session(request.user, group)
+        return Response(data={'messages': []})
+
+    def post(self, request):
+        group = self.__allowed_group(request)
+        if group is None:
             return Response(data={'message': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         try:
-            messages = clean_chat_history(request.data.get('messages'))
+            question = clean_question(request.data.get('message'))
         except ToolInputError as e:
             return Response(data={'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        page = request.data.get('page') if isinstance(request.data.get('page'), dict) else None
+
+        session = active_session(request.user, group, create=True)
+        messages = context_messages(session) + [{'role': 'user', 'content': question}]
+        session.chatmessage_set.create(role='user', content=question, page=page)
+        session.last_message_at = timezone.now()
+        session.save(update_fields=['last_message_at'])
 
         def ndjson():
+            # Mirrors how chat.js assembles the answer, so the saved copy reads the same as what was shown.
+            answer, new_paragraph, tools_used, error, done = '', False, [], None, False
             try:
-                for event in stream_chat(group, messages, request.data.get('page')):
+                for event in stream_chat(group, messages, page):
+                    if event['type'] == 'text':
+                        if new_paragraph and answer:
+                            answer += '\n\n'
+                        new_paragraph = False
+                        answer += event['text']
+                    elif event['type'] == 'status':
+                        new_paragraph = True
+                        tools_used.append(event['tool'])
+                    elif event['type'] == 'error':
+                        error = event['text']
+                    elif event['type'] == 'done':
+                        done = True
                     yield json.dumps(event) + '\n'
             except anthropic.APIError:
                 logger.exception('Chat request to Claude failed')
-                yield json.dumps({'type': 'error', 'text': 'The assistant is unavailable right now. Please try again.'}) + '\n'
+                error = 'The assistant is unavailable right now. Please try again.'
+                yield json.dumps({'type': 'error', 'text': error}) + '\n'
+            finally:
+                # Also runs if the browser goes away mid-answer, so the log shows the answer was cut short.
+                if not done and error is None:
+                    error = 'The answer was interrupted.'
+                session.chatmessage_set.create(role='assistant', content=answer, tools_used=tools_used, error=error)
+                session.last_message_at = timezone.now()
+                session.save(update_fields=['last_message_at'])
 
         response = StreamingHttpResponse(ndjson(), content_type='application/x-ndjson')
         # Stop Nginx Proxy Manager from buffering the stream so text shows up as it's generated.

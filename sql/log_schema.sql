@@ -25,3 +25,33 @@ CREATE INDEX IF NOT EXISTS api_event_group_created_idx ON log.api_event (group_i
 CREATE INDEX IF NOT EXISTS api_event_user_created_idx ON log.api_event (user_id, created_at DESC);
 
 COMMENT ON TABLE log.api_event IS 'One row per POST/PUT/PATCH/DELETE to /api/, written by the Django ApiEventLog middleware. Token-like keys are redacted.';
+
+-- Budget assistant conversations (see ChatAPI in api/views.py). Every message is kept here; only a recent
+-- window of an active session is sent back to the model (helpers/chat.py: context_messages).
+CREATE TABLE IF NOT EXISTS log.chat_session (
+    chat_session_id BIGSERIAL PRIMARY KEY,
+    user_id         INTEGER NOT NULL REFERENCES public.auth_user (id) ON DELETE CASCADE,
+    group_id        INTEGER NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_message_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- Set by "New chat"; a session idle longer than CHAT_SESSION_IDLE is also treated as over.
+    ended_at        TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS chat_session_user_group_idx ON log.chat_session (user_id, group_id, last_message_at DESC);
+
+CREATE TABLE IF NOT EXISTS log.chat_message (
+    chat_message_id BIGSERIAL PRIMARY KEY,
+    chat_session_id BIGINT NOT NULL REFERENCES log.chat_session (chat_session_id) ON DELETE CASCADE,
+    role            TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+    content         TEXT NOT NULL,
+    -- The page the user was on when asking (user messages only).
+    page            JSONB,
+    -- Tool names the assistant called for this answer (assistant messages only).
+    tools_used      JSONB,
+    -- Set when the answer failed or was cut off; such turns are shown but never sent back to the model.
+    error           TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS chat_message_session_idx ON log.chat_message (chat_session_id, chat_message_id);
