@@ -1,7 +1,29 @@
 let controller = function() {
     let objs = {
         linkBtn: document.getElementById('re-auth-btn'),
-        givenNameInput: document.getElementById('given-name')
+        givenNameInput: document.getElementById('given-name'),
+        hideBtn: document.getElementById('hide-account-btn'),
+    }
+
+    let hideAccount = function() {
+        if (!confirm('Hide this account? It and its transactions will disappear from every page and total.')) {
+            return;
+        }
+        let loader = new Loader();
+        loader.show();
+        fetch(`/api/accounts/${objs.hideBtn.dataset.accountId}`, {
+            method: 'DELETE',
+            headers: {'X-CSRFToken': getCSRFToken()},
+        }).then(async (res) => {
+            let body = await res.json();
+            if (res.status !== 200) {
+                throw new Error(body.message || 'Failed to hide the account');
+            }
+            window.location.href = '/accounts';
+        }).catch(e => {
+            loader.resolve();
+            alert(e.message);
+        });
     }
 
     let saveGivenName = function(input) {
@@ -120,5 +142,9 @@ let controller = function() {
         objs.givenNameInput.addEventListener('blur', function() {
             saveGivenName(objs.givenNameInput);
         });
+
+        if (objs.hideBtn) {
+            objs.hideBtn.addEventListener('click', hideAccount);
+        }
     }();
 }();

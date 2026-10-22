@@ -49,5 +49,12 @@
             <dd>{{ account.name }}</dd>
         </div>
     </dl>
+
+    {% if not demo_read_only %}
+    <div class="mt-5">
+        <button id="hide-account-btn" type="button" class="btn btn-outline-danger w-100" style="height: 48px;" data-account-id="{{ account.account_id }}">Hide account</button>
+        <p class="small text-body-secondary mt-2 mb-0">Removes this account and its transactions from every page and total, for example when another bank login already brings in the same account. Nothing at the bank is changed.</p>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

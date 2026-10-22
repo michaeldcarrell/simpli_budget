@@ -201,6 +201,18 @@ class AccountAPI(APIView):
         account.save()
         return Response(data=account.to_dict(), status=status.HTTP_200_OK)
 
+    def delete(self, request, account_id: str):
+        # Hides the account (e.g. a duplicate brought in by a second bank login): it and its transactions drop
+        # out of every page and total. The Plaid sync never resets `deleted`, so it stays hidden.
+        account = Accounts.objects.filter(account_id=account_id).first()
+        if account is None or not account.user_has_access(request.user):
+            return Response(data={'message': 'Account not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        account.deleted = True
+        account.updated_at = dt.now(tz=UTC)
+        account.save()
+        return Response(data={'account_id': account.account_id, 'deleted': True}, status=status.HTTP_200_OK)
+
 
 class OnboardingAPI(APIView):
     authentication_classes = [SessionAuthentication]
