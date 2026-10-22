@@ -20,9 +20,9 @@ let refreshController = function() {
         return groupId ? `?group_id=${encodeURIComponent(groupId)}` : '';
     }
 
-    let when = function(iso) {
-        let date = new Date(iso);
-        let minutes = Math.round((Date.now() - date) / 60000);
+    // The server sends how long ago the run was, so this doesn't depend on the device's clock or time zone.
+    let when = function(secondsAgo) {
+        let minutes = Math.round(secondsAgo / 60);
         if (minutes < 1) {
             return 'just now';
         }
@@ -32,7 +32,8 @@ let refreshController = function() {
         if (minutes < 24 * 60) {
             return `${Math.round(minutes / 60)}h ago`;
         }
-        return date.toLocaleString([], {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'});
+        let days = Math.round(minutes / (24 * 60));
+        return `${days} day${days === 1 ? '' : 's'} ago`;
     }
 
     let setButton = function(label, disabled) {
@@ -52,7 +53,7 @@ let refreshController = function() {
         if (!run.state) {
             objs.status.textContent = compact ? 'Not synced yet' : 'Not refreshed yet';
         } else if (run.state === 'success') {
-            let finished = when(run.finished_at || run.started_at);
+            let finished = when(run.seconds_ago);
             if (watching) {
                 showNew = true;
                 setButton(compact ? 'Show new' : 'Reload', false);
@@ -64,7 +65,7 @@ let refreshController = function() {
             }
         } else {
             objs.status.classList.add('text-over');
-            objs.status.textContent = `${compact ? 'Sync' : 'Last refresh'} failed ${when(run.finished_at || run.started_at)}`;
+            objs.status.textContent = `${compact ? 'Sync' : 'Last refresh'} failed ${when(run.seconds_ago)}`;
         }
         watching = false;
     }

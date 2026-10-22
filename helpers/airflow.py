@@ -3,6 +3,7 @@ Manual transaction refresh: triggers the Plaid sync DAG on the home server's Air
 (Airflow 3, /api/v2). The DAG refreshes every linked bank login, not just the requesting group's.
 """
 import time
+from datetime import datetime, timezone
 
 import requests
 from django.conf import settings
@@ -61,14 +62,27 @@ def _request(method: str, path: str, auth: bool = True, **kwargs) -> requests.Re
     return response
 
 
+def _seconds_ago(timestamp: str | None) -> int | None:
+    """
+    Age of an Airflow UTC timestamp, worked out here so the page doesn't depend on the viewer's clock or on
+    how their browser parses microsecond timestamps.
+    """
+    if not timestamp:
+        return None
+    return max(0, round((datetime.now(timezone.utc) - datetime.fromisoformat(timestamp)).total_seconds()))
+
+
 def _run_status(run: dict | None) -> dict:
     if run is None:
-        return {'state': None, 'manual': False, 'started_at': None, 'finished_at': None, 'active': False}
+        return {'state': None, 'manual': False, 'started_at': None, 'finished_at': None, 'seconds_ago': None,
+                'active': False}
+    started_at = run.get('start_date') or run.get('queued_at')
     return {
         'state': run['state'],
         'manual': run['run_type'] == 'manual',
-        'started_at': run.get('start_date') or run.get('queued_at'),
+        'started_at': started_at,
         'finished_at': run.get('end_date'),
+        'seconds_ago': _seconds_ago(run.get('end_date') or started_at),
         'active': run['state'] in ACTIVE_STATES,
     }
 
