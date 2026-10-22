@@ -36,6 +36,7 @@ from simpli_budget.models import (
 from helpers.plaid import Plaid
 from helpers.demo_data import generate_recent_activity
 from django.utils import timezone
+from helpers.airflow import AirflowError, latest_refresh, refresh_allowed, trigger_refresh
 from helpers.chat import (
     active_session,
     chat_allowed,
@@ -822,3 +823,40 @@ class ChatAPI(APIView):
         response['X-Accel-Buffering'] = 'no'
         response['Cache-Control'] = 'no-cache'
         return response
+
+
+class TransactionRefreshAPI(APIView):
+    """
+    GET: the latest run of the Plaid sync DAG. POST: start one now, unless one is already queued or running.
+    Only for groups in settings.REFRESH_GROUP_IDS (helpers/airflow.py).
+    """
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def __check(self, request):
+        if not refresh_allowed(request.user, get_user_group(request.user, request)):
+            return Response(data={'message': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        return None
+
+    def get(self, request):
+        denied = self.__check(request)
+        if denied:
+            return denied
+        try:
+            return Response(data=latest_refresh())
+        except AirflowError:
+            logger.exception('Could not read the transaction refresh status')
+            return Response(data={'message': 'Refresh status is unavailable right now.'}, status=status.HTTP_502_BAD_GATEWAY)
+
+    def post(self, request):
+        denied = self.__check(request)
+        if denied:
+            return denied
+        try:
+            latest = latest_refresh()
+            if latest['active']:
+                return Response(data={**latest, 'message': 'A refresh is already in progress.'}, status=status.HTTP_409_CONFLICT)
+            return Response(data=trigger_refresh(request.user))
+        except AirflowError:
+            logger.exception('Could not trigger a transaction refresh')
+            return Response(data={'message': 'Couldn\'t start a refresh right now. Please try again later.'}, status=status.HTTP_502_BAD_GATEWAY)

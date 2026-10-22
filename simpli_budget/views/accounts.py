@@ -6,11 +6,13 @@ from simpli_budget.models import (
     Accounts,
     get_user_group
 )
+from helpers.airflow import refresh_allowed
 from helpers.plaid import Plaid
 
 class AccountsView(LoginRequiredMixin, View):
     def get(self, request):
-        group_id = get_user_group(request.user, request).group_id
+        group = get_user_group(request.user, request)
+        group_id = group.group_id
         plaid = Plaid()
         context = {
             'link_token': plaid.get_link_token().get('token'),
@@ -19,6 +21,7 @@ class AccountsView(LoginRequiredMixin, View):
                 deleted=False,
             ).order_by('name'),
             'is_demo_group': settings.DEMO_GROUP_ID is not None and int(group_id) == settings.DEMO_GROUP_ID,
+            'refresh_enabled': refresh_allowed(request.user, group),
         }
         return render(request, template_name='accounts/index.html', context=context)
 

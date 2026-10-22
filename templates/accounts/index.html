@@ -4,6 +4,7 @@
 {% block scripts %}
     <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
     <script src="{% static "accounts/index.js" %}"></script>
+    {% if refresh_enabled %}<script src="{% static "accounts/refresh.js" %}"></script>{% endif %}
 {% endblock %}
 
 {% block body %}
@@ -47,5 +48,21 @@
         <p class="text-body-secondary small py-3 mb-0">No accounts linked yet.</p>
         {% endfor %}
     </section>
+
+    {% if refresh_enabled %}
+    <section class="ledger-section" aria-labelledby="refresh-heading">
+        <div class="ledger-section-header">
+            <h2 class="eyebrow m-0" id="refresh-heading">Bank sync</h2>
+        </div>
+        <div class="list-row">
+            <span class="min-w-0">
+                <span class="list-row-name d-block">Transactions</span>
+                <span id="refresh-status" class="list-row-meta d-block" aria-live="polite">Checking last refresh&hellip;</span>
+            </span>
+            <button id="refresh-btn" type="button" class="btn btn-outline-primary num text-nowrap" style="height: 44px;" disabled>REFRESH NOW</button>
+        </div>
+        <p class="small text-body-secondary mt-2 mb-0">Transactions sync from your banks every night. Refresh now pulls the latest from every linked bank; new transactions can take a minute to appear.</p>
+    </section>
+    {% endif %}
 </div>
 {% endblock %}

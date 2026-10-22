@@ -39,6 +39,15 @@ ANTHROPIC_API_KEY = config('ANTHROPIC_API_KEY', default='')
 CHAT_GROUP_IDS = config('CHAT_GROUP_IDS', default='', cast=lambda v: {int(g) for g in v.split(',') if g.strip()})
 CHAT_MODEL = config('CHAT_MODEL', default='claude-opus-5')
 
+# Manual transaction refresh (helpers/airflow.py). Groups listed in REFRESH_GROUP_IDS (comma-separated) get a
+# "Refresh now" button on the accounts page that triggers AIRFLOW_REFRESH_DAG_ID through Airflow's REST API,
+# using a dedicated Airflow login that can only see and trigger that DAG. Left empty, the feature is off.
+AIRFLOW_API_URL = config('AIRFLOW_API_URL', default='')
+AIRFLOW_API_USERNAME = config('AIRFLOW_API_USERNAME', default='simpli_budget')
+AIRFLOW_API_PASSWORD = config('AIRFLOW_API_PASSWORD', default='')
+AIRFLOW_REFRESH_DAG_ID = config('AIRFLOW_REFRESH_DAG_ID', default='plaid_nightly_refresh')
+REFRESH_GROUP_IDS = config('REFRESH_GROUP_IDS', default='', cast=lambda v: {int(g) for g in v.split(',') if g.strip()})
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
