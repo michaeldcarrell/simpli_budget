@@ -34,7 +34,7 @@ python manage.py test api.tests.SomeTestCase.test_something   # single test
 
 There is no configured linter/formatter and no JS build step (static JS is hand-written, served as-is).
 
-Production is built from the repo `Dockerfile` and deployed as a Docker container (`gunicorn simpli_budget.wsgi:application`, entrypoint also runs `collectstatic`) on the home server via Portainer. **This is a Pattern B stack** (Portainer project `budget`) — the repo's `docker-compose.yaml` is *not* the live source of truth; see [`../STACK_TOPOLOGY.md`](../STACK_TOPOLOGY.md) before assuming an edit here will apply on redeploy. The `Procfile` (`gunicorn simpli_budget.wsgi`) is unused legacy cruft — safe to ignore.
+Production is built from the repo `Dockerfile` and deployed as a Docker container (`gunicorn simpli_budget.wsgi:application`, entrypoint also runs `collectstatic`) on the home server via Portainer. **This is a Pattern B stack** (Portainer project `budget`) — the repo's `docker-compose.yaml` is *not* the live source of truth; see [`../STACK_TOPOLOGY.md`](../STACK_TOPOLOGY.md) before assuming an edit here will apply on redeploy. The `Procfile` (`gunicorn simpli_budget.wsgi`) is unused legacy cruft — safe to ignore. The Portainer stack's Env only fills `${…}` placeholders in `docker-compose.yaml`'s `environment:` list, so **a new setting must be added to that list as well as to the stack Env** — one missing from the list never reaches the container.
 
 Seed demo data (creates/reuses a "Demo Household" group with fake accounts, categories, and a few months of transaction history):
 ```bash

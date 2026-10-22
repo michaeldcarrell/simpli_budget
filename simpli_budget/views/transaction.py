@@ -11,6 +11,7 @@ from simpli_budget.models import (
     get_user_group,
     Accounts,
 )
+from helpers.airflow import refresh_allowed
 
 class CurrentTransactionTag(NamedTuple):
     tag_id: int
@@ -83,6 +84,7 @@ class TransactionSearch(LoginRequiredMixin, View):
             'categories': categories,
             'accounts': accounts,
             'tags': tags,
-            'title': 'Transaction Search'
+            'title': 'Transaction Search',
+            'refresh_enabled': refresh_allowed(request.user, group_id),
         }
         return render(request, template_name="transaction/search.html", context=context)

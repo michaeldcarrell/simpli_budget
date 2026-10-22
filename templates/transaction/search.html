@@ -10,6 +10,13 @@
         <div class="min-w-0">
             <h1 class="page-title">Transactions</h1>
             <p class="page-subtitle" id="tx-summary" aria-live="polite">Loading&hellip;</p>
+            {% if refresh_enabled %}
+            <p class="page-subtitle d-flex align-items-center gap-1">
+                <span id="refresh-status" data-compact aria-live="polite">Checking sync&hellip;</span>
+                <span aria-hidden="true">&middot;</span>
+                <button id="refresh-btn" type="button" class="btn btn-link p-0 small align-baseline" style="font-size: inherit;" disabled>Refresh</button>
+            </p>
+            {% endif %}
         </div>
         <button id="tx-export" type="button" class="btn btn-outline-secondary num d-flex align-items-center gap-2" style="height: 44px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"></path></svg>
@@ -102,4 +109,5 @@
 {% block scripts %}
     <script src="{% static 'budget/classes/Budget.js' %}"></script>
     <script src="{% static 'transaction/js/search.js' %}"></script>
+    {% if refresh_enabled %}<script src="{% static 'accounts/refresh.js' %}"></script>{% endif %}
 {% endblock %}
