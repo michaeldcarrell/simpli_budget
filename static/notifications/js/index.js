@@ -4,6 +4,7 @@ let controller = function() {
         notificationChannelToggles: document.getElementsByClassName('notification-channel-toggle'),
         notificationFrequencyInput: document.getElementById('notification-frequency-days'),
         notificationToggles: document.getElementsByClassName('notification-category-toggle'),
+        notificationAccountToggles: document.getElementsByClassName('notification-account-toggle'),
     }
 
     let saveTextSetting = function(input, field, label) {
@@ -119,13 +120,12 @@ let controller = function() {
         });
     }
 
-    let saveNotificationCategory = function(input) {
-        let categoryId = input.getAttribute('data-category-id');
+    let saveSubscription = function(input, url, label) {
         let subscribed = input.checked;
         let token = getCSRFToken();
         let loader = new Loader();
         loader.show();
-        fetch(`/api/category/${categoryId}/notification`, {
+        fetch(url, {
             method: 'PUT',
             headers: {
                 'X-CSRFToken': token,
@@ -140,7 +140,7 @@ let controller = function() {
         }).then(data => {
             loader.resolve();
             if (data.status_code !== 200) {
-                alert(data.body.message || 'Failed to update notification category');
+                alert(data.body.message || `Failed to update ${label}`);
                 input.checked = !subscribed;
             }
         }).catch(e => {
@@ -149,6 +149,16 @@ let controller = function() {
             input.checked = !subscribed;
             throw e;
         });
+    }
+
+    let saveNotificationCategory = function(input) {
+        let categoryId = input.getAttribute('data-category-id');
+        saveSubscription(input, `/api/category/${categoryId}/notification`, 'notification category');
+    }
+
+    let saveNotificationAccount = function(input) {
+        let accountId = encodeURIComponent(input.getAttribute('data-account-id'));
+        saveSubscription(input, `/api/accounts/${accountId}/notification`, 'notification account');
     }
 
     let initHelpTooltips = function() {
@@ -202,6 +212,12 @@ let controller = function() {
         Array.from(objs.notificationToggles).forEach(function(toggle) {
             toggle.addEventListener('change', function() {
                 saveNotificationCategory(toggle);
+            });
+        });
+
+        Array.from(objs.notificationAccountToggles).forEach(function(toggle) {
+            toggle.addEventListener('change', function() {
+                saveNotificationAccount(toggle);
             });
         });
     }();

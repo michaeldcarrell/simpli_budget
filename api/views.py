@@ -31,7 +31,8 @@ from simpli_budget.models import (
     CategoryMonth,
     TransactionSearch,
     UserAttributes,
-    NotificationCategories
+    NotificationCategories,
+    NotificationAccounts,
 )
 from helpers.plaid import Plaid
 from helpers.demo_data import generate_recent_activity
@@ -133,6 +134,7 @@ class PlaidPublicTokenExchangeAPI(APIView):
             token = exchange_response['token']
             access_token.access_token = token
             access_token.updated_at = dt.now()
+            access_token.login_required_at = None
             access_token.save()
         if not access_token.user_has_access(request.user):
             return Response(data={'message': 'Access token not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -238,7 +240,7 @@ class UserSettingsAPI(APIView):
         if 'discord_user_id' in request.data:
             discord_user_id = (request.data.get('discord_user_id') or '').strip()
             updates['discord_user_id'] = discord_user_id or None
-        for toggle in ('discord_notifications_enabled', 'email_notifications_enabled'):
+        for toggle in ('discord_notifications_enabled', 'email_notifications_enabled', 'bank_login_alerts_enabled'):
             if toggle in request.data:
                 enabled = request.data.get(toggle)
                 if not isinstance(enabled, bool):
@@ -269,6 +271,7 @@ class UserSettingsAPI(APIView):
                 'discord_notifications_enabled': user_attributes.discord_notifications_enabled,
                 'email_notifications_enabled': user_attributes.email_notifications_enabled,
                 'notification_frequency_days': user_attributes.notification_frequency_days,
+                'bank_login_alerts_enabled': user_attributes.bank_login_alerts_enabled,
                 'theme': user_attributes.theme,
             },
             status=status.HTTP_200_OK,
@@ -302,6 +305,24 @@ class NotificationCategoryAPI(APIView):
         else:
             NotificationCategories.objects.filter(user_attributes=user_attributes, category=category).delete()
         return Response(data={'category_id': category_id, 'subscribed': subscribed}, status=status.HTTP_200_OK)
+
+
+class NotificationAccountAPI(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, account_id: str):
+        account = Accounts.objects.filter(account_id=account_id).first()
+        if account is None or not account.user_has_access(request.user):
+            return Response(data={'message': 'Account not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        user_attributes, _ = UserAttributes.objects.get_or_create(user=request.user)
+        subscribed = bool(request.data.get('subscribed'))
+        if subscribed:
+            NotificationAccounts.objects.get_or_create(user_attributes=user_attributes, account=account)
+        else:
+            NotificationAccounts.objects.filter(user_attributes=user_attributes, account=account).delete()
+        return Response(data={'account_id': account_id, 'subscribed': subscribed}, status=status.HTTP_200_OK)
 
 
 class RuleSetAPI(APIView):

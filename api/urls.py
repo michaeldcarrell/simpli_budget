@@ -9,6 +9,7 @@ urlpatterns = [
     path('accounts/<str:account_id>/link_token', PlaidLinkTokenAPI.as_view(), name='Plaid Link Token'),
     path('access_token/<int:access_token_id>', PlaidPublicTokenExchangeAPI.as_view(), name='Plaid Public Token Exchange'),
     path('accounts/new', PlaidNewAccountAPI.as_view(), name='Plaid New Account'),
+    path('accounts/<str:account_id>/notification', NotificationAccountAPI.as_view(), name='Notification Account'),
     path('accounts/<str:account_id>', AccountAPI.as_view(), name='Account'),
     path('onboarding/complete', OnboardingAPI.as_view(), name='Onboarding Complete'),
     path('settings', UserSettingsAPI.as_view(), name='User Settings'),

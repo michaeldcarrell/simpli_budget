@@ -7,7 +7,7 @@
 {% block body %}
 <div class="page-narrow">
     <h1 class="page-title">Notifications</h1>
-    <p class="page-subtitle">A summary of the categories you pick, sent where you choose</p>
+    <p class="page-subtitle">A summary of the categories and account balances you pick, sent where you choose</p>
 
     <section class="ledger-section">
         <div class="ledger-section-header">
@@ -18,7 +18,7 @@
                 <label for="discord-notifications-enabled" class="list-row-name">Discord</label>
                 <button type="button" class="btn btn-link notification-help" aria-label="About Discord notifications"
                     data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
-                    data-bs-title="Sends your notification categories summary as a Discord DM to the Discord User ID below.">{% include "notifications/_info_icon.html" %}</button>
+                    data-bs-title="Sends your notification summary as a Discord DM to the Discord User ID below.">{% include "notifications/_info_icon.html" %}</button>
             </span>
             <span class="form-check form-switch m-0">
                 <input
@@ -51,7 +51,7 @@
                 <label for="email-notifications-enabled" class="list-row-name">Email</label>
                 <button type="button" class="btn btn-link notification-help" aria-label="About email notifications"
                     data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
-                    data-bs-title="Sends your notification categories summary by email to <strong>{{ user.email }}</strong>, the Google account you sign in with.">{% include "notifications/_info_icon.html" %}</button>
+                    data-bs-title="Sends your notification summary by email to <strong>{{ user.email }}</strong>, the Google account you sign in with.">{% include "notifications/_info_icon.html" %}</button>
                 <span class="list-row-meta d-block">{{ user.email }}</span>
             </span>
             <span class="form-check form-switch m-0">
@@ -87,6 +87,31 @@
         </div>
     </section>
 
+    <section class="ledger-section mt-4">
+        <div class="ledger-section-header">
+            <h2 class="eyebrow m-0">Alerts</h2>
+        </div>
+        <div class="list-row">
+            <span class="min-w-0">
+                <label for="bank-login-alerts-enabled" class="list-row-name">Bank login expired</label>
+                <button type="button" class="btn btn-link notification-help" aria-label="About bank login alerts"
+                    data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
+                    data-bs-title="Sent once, right away, when a bank connection stops syncing because the bank wants you to log in again. Goes to whichever of Discord and email are turned on above.">{% include "notifications/_info_icon.html" %}</button>
+            </span>
+            <span class="form-check form-switch m-0">
+                <input
+                    type="checkbox"
+                    role="switch"
+                    id="bank-login-alerts-enabled"
+                    class="form-check-input notification-channel-toggle"
+                    data-field="bank_login_alerts_enabled"
+                    data-label="bank login alerts"
+                    {% if bank_login_alerts_enabled %}checked{% endif %}
+                >
+            </span>
+        </div>
+    </section>
+
     <div class="d-flex align-items-center gap-1 mt-4">
         <h2 class="eyebrow m-0">Categories in the summary</h2>
         <button type="button" class="btn btn-link notification-help" aria-label="About notification categories"
@@ -115,6 +140,35 @@
         {% endfor %}
     </section>
     {% endfor %}
+
+    {% if accounts %}
+    <div class="d-flex align-items-center gap-1 mt-4">
+        <h2 class="eyebrow m-0">Account balances in the summary</h2>
+        <button type="button" class="btn btn-link notification-help" aria-label="About notification account balances"
+                    data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
+                    data-bs-title="Pick which accounts' current balances to include in your summary.">{% include "notifications/_info_icon.html" %}</button>
+    </div>
+    <section class="ledger-section mt-3">
+        {% for account in accounts %}
+        <label class="list-row" for="notify-account-{{ forloop.counter }}" style="cursor: pointer;">
+            <span class="min-w-0">
+                <span class="list-row-name">{{ account.display_name }}</span>
+                <span class="list-row-meta d-block num">{{ account.display_balance }}</span>
+            </span>
+            <span class="form-check form-switch m-0">
+                <input
+                    type="checkbox"
+                    role="switch"
+                    id="notify-account-{{ forloop.counter }}"
+                    class="form-check-input notification-account-toggle"
+                    data-account-id="{{ account.account_id }}"
+                    {% if account.is_subscribed %}checked{% endif %}
+                >
+            </span>
+        </label>
+        {% endfor %}
+    </section>
+    {% endif %}
 </div>
 {% endblock %}
 {% block scripts %}

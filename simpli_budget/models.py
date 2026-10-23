@@ -166,6 +166,7 @@ class UserAttributes(models.Model):
     email_notifications_enabled = models.BooleanField(default=False)
     theme = models.CharField(max_length=8, default='dark')
     notification_frequency_days = models.PositiveIntegerField(default=1)
+    bank_login_alerts_enabled = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=dt.now)
     updated_at = models.DateTimeField(default=dt.now)
 
@@ -477,6 +478,8 @@ class AccessTokens(models.Model):
     updated_at = models.DateTimeField(blank=True, null=True)
     deleted = models.BooleanField(blank=True, null=True)
     institution_id = models.CharField(max_length=64, blank=True, null=True)
+    # Set by the Airflow Plaid sync when the bank needs the user to log in again; cleared on the next good sync.
+    login_required_at = models.DateTimeField(blank=True, null=True)
 
     def to_dict(self, public: bool = True):
         return_dict = {
@@ -563,9 +566,23 @@ class Accounts(models.Model):
     def out_of_date(self):
         if self.access_token is None:
             return False
+        if self.access_token.login_required_at is not None:
+            return True
         account_stale = (dt.now(tz=UTC) - self.updated_at) > timedelta(hours=36)
         new_token = (dt.now(tz=UTC) - self.access_token.updated_at) < timedelta(hours=2)
         return account_stale and not new_token
+
+
+class NotificationAccounts(models.Model):
+    notification_account_id = models.AutoField(primary_key=True)
+    user_attributes = models.ForeignKey(UserAttributes, on_delete=models.CASCADE, db_column='user_id')
+    account = models.ForeignKey(Accounts, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        managed = False
+        db_table = 'notification_accounts'
+        unique_together = (('user_attributes', 'account'),)
 
 
 class Transactions(models.Model):
