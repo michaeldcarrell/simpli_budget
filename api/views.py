@@ -127,7 +127,9 @@ class PlaidPublicTokenExchangeAPI(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, access_token_id: int):
-        access_token = AccessTokens.objects.get(access_token_id=access_token_id)
+        access_token = AccessTokens.objects.filter(access_token_id=access_token_id).first()
+        if access_token is None or not access_token.user_has_access(request.user):
+            return Response(data={'message': 'Access token not found'}, status=status.HTTP_404_NOT_FOUND)
         plaid = Plaid()
         exchange_response = plaid.public_token_exchange(public_token=request.data['public_token'])
         if exchange_response['success']:
@@ -135,9 +137,9 @@ class PlaidPublicTokenExchangeAPI(APIView):
             access_token.access_token = token
             access_token.updated_at = dt.now()
             access_token.login_required_at = None
+            # Signing in again revives a login the sync had stopped using; it skips deleted logins.
+            access_token.deleted = False
             access_token.save()
-        if not access_token.user_has_access(request.user):
-            return Response(data={'message': 'Access token not found'}, status=status.HTTP_404_NOT_FOUND)
         return Response(data=access_token.to_dict(), status=status.HTTP_200_OK)
 
 

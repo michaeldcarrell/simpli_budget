@@ -10,10 +10,8 @@ let refreshController = function() {
     const compact = objs.status.hasAttribute('data-compact');
     const buttonLabel = objs.button.textContent;
     let pollTimer = null;
-    // Set once this page starts a run, so its result can be reported when it finishes.
+    // Set once this page starts a run; when that run succeeds the page reloads to show what came in.
     let watching = false;
-    // After a run this page started succeeds, the button reloads the page to show what came in.
-    let showNew = false;
 
     let groupQuery = function() {
         let groupId = getQueryParamValue('group_id');
@@ -55,9 +53,10 @@ let refreshController = function() {
         } else if (run.state === 'success') {
             let finished = when(run.seconds_ago);
             if (watching) {
-                showNew = true;
-                setButton(compact ? 'Show new' : 'Reload', false);
-                objs.status.textContent = compact ? 'Synced just now' : 'Refreshed just now.';
+                setButton(buttonLabel, true);
+                objs.status.textContent = compact ? 'Synced, reloading…' : 'Refreshed, reloading…';
+                window.location.reload();
+                return;
             } else if (compact) {
                 objs.status.textContent = `Synced ${finished}`;
             } else {
@@ -89,10 +88,6 @@ let refreshController = function() {
     }
 
     objs.button.addEventListener('click', async function() {
-        if (showNew) {
-            window.location.reload();
-            return;
-        }
         setButton(buttonLabel, true);
         objs.status.textContent = compact ? 'Starting sync…' : 'Starting refresh…';
         try {
