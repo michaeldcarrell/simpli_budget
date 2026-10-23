@@ -46,6 +46,31 @@
         </div>
     </section>
 
+    {% if pto %}
+    <section class="ledger-section mt-3" aria-label="{{ pto.owner }}'s PTO">
+        <div class="ledger-section-header">
+            <h2 class="eyebrow m-0">{{ pto.owner }}'s PTO</h2>
+            <span class="num small {% if pto.pto < 0 %}text-over{% else %}text-primary{% endif %} fw-semibold">{% if pto.pto < 0 %}-{% endif %}{{ pto.pto|floatformat:"2g"|cut:"-" }}</span>
+        </div>
+        <a class="list-row" href="/accounts/{{ pto.account.account_id }}">
+            <span class="min-w-0">
+                <span class="list-row-name">{{ pto.account.display_name }}</span>
+                <span class="list-row-meta d-block {% if pto.is_stale %}text-warn{% endif %}">
+                    {% if pto.is_stale %}Stopped syncing &middot; balance from {{ pto.balance_as_of|date:"M j, Y" }}{% else %}Balance{% endif %}
+                </span>
+            </span>
+            <span class="num">{{ pto.balance|floatformat:"2g" }}</span>
+        </a>
+        <div class="list-row">
+            <span class="min-w-0">
+                <span class="list-row-name">Taxes set aside</span>
+                <span class="list-row-meta d-block">{% widthratio pto.tax_rate 1 100 %}% of {{ pto.quarter_income|floatformat:"2g" }} income in {{ pto.quarter_label }}</span>
+            </span>
+            <span class="num">-{{ pto.taxes_set_aside|floatformat:"2g" }}</span>
+        </div>
+    </section>
+    {% endif %}
+
     {% for section in sections %}
     <section class="ledger-section">
         <div class="ledger-section-header">
