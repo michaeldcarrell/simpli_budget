@@ -1,25 +1,17 @@
-"""The owner's PTO fund, shown on the month overview for her group only.
+"""PTO funds, shown on the PTO tab for the groups configured in settings.PTO_FUNDS only.
 
-the owner sets her quarterly estimated taxes aside in her fund account, so what's in it beyond this quarter's taxes is
-time off she's saved up: the account's balance minus TAX_RATE of the income she's received since the quarter began.
+A fund is an account someone sets their quarterly estimated taxes aside in, so what's in it beyond this quarter's taxes
+is time off they've saved up: the account's balance minus tax_rate of the income received since the quarter began.
 Earlier quarters' taxes are assumed already paid out of the account.
 """
 from dataclasses import dataclass
 from datetime import date, datetime as dt, timedelta
 
+from django.conf import settings
 from pytz import UTC
 
 from simpli_budget.models import Accounts, Transactions
 
-# group_id -> who it's for. Only these groups see the card.
-PTO_FUNDS = {
-    1: {
-        'owner': 'Owner',
-        'account_name': 'PTO Account',  # matched against the account's given (display) name
-        'income_category_id': 2,  # "Owner Income"
-        'tax_rate': 0.30,
-    },
-}
 # A balance older than this gets a "reconnect" warning, since the PTO figure is only as fresh as it.
 STALE_AFTER = timedelta(hours=36)
 
@@ -53,7 +45,7 @@ class PtoFund:
 
 def pto_enabled(group_id) -> bool:
     """Whether the group gets the PTO tab; a config lookup only, so it's cheap enough for every page's nav."""
-    return group_id is not None and int(group_id) in PTO_FUNDS
+    return group_id is not None and int(group_id) in settings.PTO_FUNDS
 
 
 def _quarter_start(today: date) -> date:
@@ -62,7 +54,7 @@ def _quarter_start(today: date) -> date:
 
 def pto_fund(group_id: int, today: date | None = None) -> PtoFund | None:
     """The group's PTO fund as of today, or None if the group doesn't have one (or its account is missing)."""
-    config = PTO_FUNDS.get(int(group_id))
+    config = settings.PTO_FUNDS.get(int(group_id))
     if config is None:
         return None
     account = Accounts.objects.filter(group_id=group_id, given_name=config['account_name'], deleted=False).first()
@@ -71,7 +63,7 @@ def pto_fund(group_id: int, today: date | None = None) -> PtoFund | None:
 
     today = today or dt.now().date()
     quarter_start = _quarter_start(today)
-    # Income categories also hold outgoing transfers (e.g. her $100 fund contributions); only money received
+    # Income categories can also hold outgoing transfers (e.g. contributions to the fund); only money received
     # counts as income, and Plaid records money in as a negative amount.
     income_transactions = [
         t for t in Transactions.objects.filter(

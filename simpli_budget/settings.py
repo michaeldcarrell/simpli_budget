@@ -9,6 +9,8 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
+import json
+
 from decouple import config
 from pathlib import Path
 
@@ -47,6 +49,11 @@ AIRFLOW_API_USERNAME = config('AIRFLOW_API_USERNAME', default='simpli_budget')
 AIRFLOW_API_PASSWORD = config('AIRFLOW_API_PASSWORD', default='')
 AIRFLOW_REFRESH_DAG_ID = config('AIRFLOW_REFRESH_DAG_ID', default='plaid_nightly_refresh')
 REFRESH_GROUP_IDS = config('REFRESH_GROUP_IDS', default='', cast=lambda v: {int(g) for g in v.split(',') if g.strip()})
+
+# PTO tab (helpers/pto.py), as JSON keyed by group_id: {"<group_id>": {"owner": "<name>", "account_name": "<the
+# account's given name>", "income_category_id": <id>, "tax_rate": <e.g. 0.3>}}. Left empty, no group gets the tab.
+# Kept out of the code because it describes real people's finances; Airflow's classes/budget/pto.py has its own copy.
+PTO_FUNDS = config('PTO_FUNDS', default='', cast=lambda v: {int(g): fund for g, fund in json.loads(v).items()} if v.strip() else {})
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)

@@ -4,3 +4,8 @@
 .env
 /staticfiles
 test.py
+__pycache__/
+.env*
+stack.env
+# Personal planning notes: real names, incomes and employers, never for a public repo.
+split_finances.md
