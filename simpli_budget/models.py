@@ -167,6 +167,7 @@ class UserAttributes(models.Model):
     theme = models.CharField(max_length=8, default='dark')
     notification_frequency_days = models.PositiveIntegerField(default=1)
     bank_login_alerts_enabled = models.BooleanField(default=True)
+    pto_notifications_enabled = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=dt.now)
     updated_at = models.DateTimeField(default=dt.now)
 

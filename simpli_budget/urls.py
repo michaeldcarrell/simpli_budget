@@ -32,6 +32,7 @@ urlpatterns = [
     path("rules", views.Rules.as_view(), name="rules"),
     path("rules/<int:rule_set_id>", views.RuleView.as_view(), name="rule"),
     path("tags", views.Tags.as_view(), name="tags"),
+    path("pto", views.Pto.as_view(), name="pto"),
     path("notifications", views.Notifications.as_view(), name="notifications"),
     path("settings", RedirectView.as_view(url="/notifications")),  # old name, kept for bookmarks
     path("logout", views.Logout.as_view(), name="logout"),

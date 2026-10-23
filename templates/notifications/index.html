@@ -112,6 +112,33 @@
         </div>
     </section>
 
+    {% if pto_enabled %}
+    <section class="ledger-section mt-4">
+        <div class="ledger-section-header">
+            <h2 class="eyebrow m-0">PTO in the summary</h2>
+        </div>
+        <div class="list-row">
+            <span class="min-w-0">
+                <label for="pto-notifications-enabled" class="list-row-name">Include PTO</label>
+                <button type="button" class="btn btn-link notification-help" aria-label="About PTO in the summary"
+                    data-bs-toggle="tooltip" data-bs-html="true" data-bs-custom-class="notification-help-tooltip"
+                    data-bs-title="Adds the PTO figure from the PTO tab to your summary: the fund balance minus this quarter's taxes set aside.">{% include "notifications/_info_icon.html" %}</button>
+            </span>
+            <span class="form-check form-switch m-0">
+                <input
+                    type="checkbox"
+                    role="switch"
+                    id="pto-notifications-enabled"
+                    class="form-check-input notification-channel-toggle"
+                    data-field="pto_notifications_enabled"
+                    data-label="PTO in the summary"
+                    {% if pto_notifications_enabled %}checked{% endif %}
+                >
+            </span>
+        </div>
+    </section>
+    {% endif %}
+
     <div class="d-flex align-items-center gap-1 mt-4">
         <h2 class="eyebrow m-0">Categories in the summary</h2>
         <button type="button" class="btn btn-link notification-help" aria-label="About notification categories"

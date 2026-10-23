@@ -34,6 +34,7 @@
         <a href="/tags" {% if nav_section == 'tags' %}aria-current="page"{% endif %}>Tags</a>
         <a href="/rules" {% if nav_section == 'rules' %}aria-current="page"{% endif %}>Rules</a>
         <a href="/accounts" {% if nav_section == 'accounts' %}aria-current="page"{% endif %}>Accounts</a>
+        {% if pto_enabled %}<a href="/pto" {% if nav_section == 'pto' %}aria-current="page"{% endif %}>PTO</a>{% endif %}
     </nav>
     <div class="app-header-actions">
         <div id="onboarding-resume-container" class="d-flex align-items-center"></div>
@@ -105,6 +106,7 @@
             <a class="list-group-item list-group-item-action" href="/tags">Tags</a>
             <a class="list-group-item list-group-item-action" href="/rules">Rules</a>
             <a class="list-group-item list-group-item-action" href="/accounts">Accounts</a>
+            {% if pto_enabled %}<a class="list-group-item list-group-item-action" href="/pto">PTO</a>{% endif %}
             <a class="list-group-item list-group-item-action" href="/notifications">Notifications</a>
             <a class="list-group-item list-group-item-action text-over" href="/logout">Log out</a>
         </div>

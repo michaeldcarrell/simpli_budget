@@ -32,6 +32,7 @@ class PtoFund:
     quarter_label: str
     quarter_income: float
     tax_rate: float
+    income_transactions: list[Transactions]
 
     @property
     def taxes_set_aside(self) -> float:
@@ -48,6 +49,11 @@ class PtoFund:
     @property
     def is_stale(self) -> bool:
         return self.account.updated_at is None or dt.now(tz=UTC) - self.account.updated_at > STALE_AFTER
+
+
+def pto_enabled(group_id) -> bool:
+    """Whether the group gets the PTO tab; a config lookup only, so it's cheap enough for every page's nav."""
+    return group_id is not None and int(group_id) in PTO_FUNDS
 
 
 def _quarter_start(today: date) -> date:
@@ -67,13 +73,16 @@ def pto_fund(group_id: int, today: date | None = None) -> PtoFund | None:
     quarter_start = _quarter_start(today)
     # Income categories also hold outgoing transfers (e.g. her $100 fund contributions); only money received
     # counts as income, and Plaid records money in as a negative amount.
-    transactions = Transactions.objects.filter(
-        category_id=config['income_category_id'],
-        account__deleted=False,
-        date__date__gte=quarter_start,
-        date__date__lte=today,
-    ).exclude(deleted=True)
-    quarter_income = -sum(t.amount for t in transactions if t.amount is not None and t.amount < 0)
+    income_transactions = [
+        t for t in Transactions.objects.filter(
+            category_id=config['income_category_id'],
+            account__deleted=False,
+            date__date__gte=quarter_start,
+            date__date__lte=today,
+        ).exclude(deleted=True).order_by('-date')
+        if t.amount is not None and t.amount < 0
+    ]
+    quarter_income = -sum(t.amount for t in income_transactions)
 
     return PtoFund(
         owner=config['owner'],
@@ -82,4 +91,5 @@ def pto_fund(group_id: int, today: date | None = None) -> PtoFund | None:
         quarter_label=f"Q{(quarter_start.month - 1) // 3 + 1} {quarter_start.year}",
         quarter_income=quarter_income,
         tax_rate=config['tax_rate'],
+        income_transactions=income_transactions,
     )

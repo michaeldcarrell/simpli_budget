@@ -2,6 +2,7 @@ from django.conf import settings
 from django.http import Http404
 
 from helpers.chat import chat_allowed
+from helpers.pto import pto_enabled
 from simpli_budget.models import UserAttributes, get_user_group, is_demo_user
 
 
@@ -39,12 +40,23 @@ def chat(request):
     }
 
 
+def pto(request):
+    if not request.user.is_authenticated or is_demo_user(request.user):
+        return {}
+    try:
+        group = get_user_group(request.user, request)
+    except Http404:
+        return {}
+    return {'pto_enabled': pto_enabled(group.group_id)}
+
+
 NAV_SECTIONS = (
     ('/transaction', 'transactions'),
     ('/categories', 'categories'),
     ('/tags', 'tags'),
     ('/rules', 'rules'),
     ('/accounts', 'accounts'),
+    ('/pto', 'pto'),
     ('/notifications', 'more'),
     ('/budget', 'budget'),
 )

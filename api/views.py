@@ -242,7 +242,8 @@ class UserSettingsAPI(APIView):
         if 'discord_user_id' in request.data:
             discord_user_id = (request.data.get('discord_user_id') or '').strip()
             updates['discord_user_id'] = discord_user_id or None
-        for toggle in ('discord_notifications_enabled', 'email_notifications_enabled', 'bank_login_alerts_enabled'):
+        for toggle in ('discord_notifications_enabled', 'email_notifications_enabled', 'bank_login_alerts_enabled',
+                       'pto_notifications_enabled'):
             if toggle in request.data:
                 enabled = request.data.get(toggle)
                 if not isinstance(enabled, bool):
@@ -274,6 +275,7 @@ class UserSettingsAPI(APIView):
                 'email_notifications_enabled': user_attributes.email_notifications_enabled,
                 'notification_frequency_days': user_attributes.notification_frequency_days,
                 'bank_login_alerts_enabled': user_attributes.bank_login_alerts_enabled,
+                'pto_notifications_enabled': user_attributes.pto_notifications_enabled,
                 'theme': user_attributes.theme,
             },
             status=status.HTTP_200_OK,

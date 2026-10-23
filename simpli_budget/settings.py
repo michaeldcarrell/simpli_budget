@@ -130,6 +130,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "simpli_budget.context_processors.user_preferences",
                 "simpli_budget.context_processors.chat",
+                "simpli_budget.context_processors.pto",
                 "simpli_budget.context_processors.navigation",
             ],
         },

@@ -5,7 +5,6 @@ from django.views import View
 from simpli_budget.models import CategoryMonth, Categories, CategoryType, UserAttributes, BudgetMonth, Month, get_user_group
 from datetime import datetime as dt
 from simpli_budget.views.categories import _set_monthly_averages
-from helpers.pto import pto_fund
 
 class BudgetCategory(LoginRequiredMixin, View):
     def get(self, request, category_id: int):
@@ -169,6 +168,5 @@ class MonthBudget(LoginRequiredMixin, View):
             'month_percent': round(today.day / days_in_month * 100),
             'month_label': f"{month_start.month_name_short} {month_start.year}".upper(),
             'is_demo_group': settings.DEMO_GROUP_ID is not None and int(group_id) == settings.DEMO_GROUP_ID,
-            'pto': pto_fund(group_id),
         }
         return render(request, template_name="budget/month_overview.html", context=context)

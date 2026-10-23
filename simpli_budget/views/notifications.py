@@ -57,6 +57,7 @@ class Notifications(LoginRequiredMixin, View):
             "email_notifications_enabled": user_attributes.email_notifications_enabled,
             "notification_frequency_days": user_attributes.notification_frequency_days,
             "bank_login_alerts_enabled": user_attributes.bank_login_alerts_enabled,
+            "pto_notifications_enabled": user_attributes.pto_notifications_enabled,
             "sections": sections,
             "accounts": accounts,
         }

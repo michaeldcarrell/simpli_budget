@@ -14,6 +14,7 @@ from simpli_budget.views.accounts import AccountsView, Account
 from simpli_budget.views.rules import Rules, RuleView
 from simpli_budget.views.tags import Tags
 from simpli_budget.views.notifications import Notifications
+from simpli_budget.views.pto import Pto
 
 
 class Logout(View):
