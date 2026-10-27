@@ -21,6 +21,7 @@
     --sb-accent-soft: #16261e;
     --sb-over: #ff8a65;
     --sb-warn: #f5c451;
+    --sb-danger: #ff5c5c;
     --sb-track: #2a2f36;
     --sb-scrim: rgba(5, 6, 8, 0.66);
 }
@@ -41,6 +42,7 @@
     --sb-accent-soft: #e3f4ec;
     --sb-over: #c4410f;
     --sb-warn: #8a6100;
+    --sb-danger: #b42318;
     --sb-track: #e3e6ea;
     --sb-scrim: rgba(21, 24, 28, 0.45);
 }
@@ -200,6 +202,20 @@ body {
 
 .text-warn {
     color: var(--sb-warn) !important;
+}
+
+/* Month overview "Left": green within budget, yellow fading to orange as spending eats into the
+   extra-paycheck headroom (--overspend, 0-100%), red once it passes average income. */
+.left-ok {
+    color: var(--sb-accent);
+}
+
+.left-warn {
+    color: color-mix(in srgb, var(--sb-over) var(--overspend), var(--sb-warn));
+}
+
+.left-over {
+    color: var(--sb-danger);
 }
 
 .eyebrow {

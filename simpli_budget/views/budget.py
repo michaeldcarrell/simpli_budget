@@ -64,6 +64,9 @@ class BudgetCategory(LoginRequiredMixin, View):
 
 
 BAR_SEGMENTS = 10
+# Income is budgeted as two paychecks a month, but bi-weekly pay is 26 a year, so it averages 13/12 of that.
+PAYCHECKS_PER_YEAR = 26
+BUDGETED_PAYCHECKS_PER_MONTH = 2
 
 
 def _num(value: float) -> str:
@@ -107,6 +110,21 @@ def _category_row(category_month, is_income: bool) -> dict:
     return row
 
 
+def _left_state(spent: float, budgeted_expenses: float, budgeted_income: float) -> tuple[str, int]:
+    """
+    Colour zone for the month's Left: 'ok' while within budget, 'warn' while over budget but still within
+    average monthly income (budgeted income scaled from two paychecks to the bi-weekly average), and 'over'
+    beyond that. For 'warn', also how far (0-100) spending is from the budget toward average income.
+    """
+    if spent <= budgeted_expenses:
+        return 'ok', 0
+    average_income = budgeted_income * PAYCHECKS_PER_YEAR / 12 / BUDGETED_PAYCHECKS_PER_MONTH
+    if spent > average_income:
+        return 'over', 100
+    headroom = average_income - budgeted_expenses
+    return 'warn', round((spent - budgeted_expenses) / headroom * 100)
+
+
 class MonthBudget(LoginRequiredMixin, View):
     def get(self, request):
         today = dt.now()
@@ -123,7 +141,7 @@ class MonthBudget(LoginRequiredMixin, View):
         )
 
         sections = []
-        income = spent = budgeted_expenses = 0
+        income = spent = budgeted_expenses = budgeted_income = 0
         for category_type_month in budget_month.category_types:
             is_income = bool(category_type_month.category_type.invert_amounts)
             rows = [_category_row(category_month, is_income) for category_month in category_type_month.categories]
@@ -131,6 +149,7 @@ class MonthBudget(LoginRequiredMixin, View):
             section_target = sum(row['target'] for row in rows)
             if is_income:
                 income += section_spent
+                budgeted_income += section_target
             else:
                 spent += section_spent
                 budgeted_expenses += section_target
@@ -155,13 +174,15 @@ class MonthBudget(LoginRequiredMixin, View):
         days_in_month = month_start.days_in_month
         is_current_month = year_month == current_year_month
         left = budgeted_expenses - spent
+        left_state, left_overspend_percent = _left_state(spent, budgeted_expenses, budgeted_income)
         context = {
             'budget_month': budget_month,
             'sections': sections,
             'income_display': _num(income),
             'spent_display': _num(spent),
             'left_display': _num(left),
-            'left_is_negative': left < 0,
+            'left_state': left_state,
+            'left_overspend_percent': left_overspend_percent,
             'is_current_month': is_current_month,
             'day_of_month': today.day,
             'days_in_month': days_in_month,

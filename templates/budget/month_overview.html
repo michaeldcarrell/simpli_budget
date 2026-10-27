@@ -42,7 +42,7 @@
         </div>
         <div>
             <span class="stat-label">Left</span>
-            <span class="stat-value {% if left_is_negative %}text-over{% else %}text-primary{% endif %}">{{ left_display }}</span>
+            <span class="stat-value left-{{ left_state }}" style="--overspend: {{ left_overspend_percent }}%">{{ left_display }}</span>
         </div>
     </section>
 
