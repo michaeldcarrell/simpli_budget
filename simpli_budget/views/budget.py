@@ -110,15 +110,19 @@ def _category_row(category_month, is_income: bool) -> dict:
     return row
 
 
-def _left_state(spent: float, budgeted_expenses: float, budgeted_income: float) -> tuple[str, int]:
+def _average_income(budgeted_income: float) -> float:
+    """Budgeted income (two paychecks) scaled to what bi-weekly pay averages to per month."""
+    return budgeted_income * PAYCHECKS_PER_YEAR / 12 / BUDGETED_PAYCHECKS_PER_MONTH
+
+
+def _left_state(spent: float, budgeted_expenses: float, average_income: float) -> tuple[str, int]:
     """
     Colour zone for the month's Left: 'ok' while within budget, 'warn' while over budget but still within
-    average monthly income (budgeted income scaled from two paychecks to the bi-weekly average), and 'over'
-    beyond that. For 'warn', also how far (0-100) spending is from the budget toward average income.
+    average monthly income, and 'over' beyond that. For 'warn', also how far (0-100) spending is from the
+    budget toward average income.
     """
     if spent <= budgeted_expenses:
         return 'ok', 0
-    average_income = budgeted_income * PAYCHECKS_PER_YEAR / 12 / BUDGETED_PAYCHECKS_PER_MONTH
     if spent > average_income:
         return 'over', 100
     headroom = average_income - budgeted_expenses
@@ -174,7 +178,8 @@ class MonthBudget(LoginRequiredMixin, View):
         days_in_month = month_start.days_in_month
         is_current_month = year_month == current_year_month
         left = budgeted_expenses - spent
-        left_state, left_overspend_percent = _left_state(spent, budgeted_expenses, budgeted_income)
+        average_income = _average_income(budgeted_income)
+        left_state, left_overspend_percent = _left_state(spent, budgeted_expenses, average_income)
         context = {
             'budget_month': budget_month,
             'sections': sections,
@@ -183,6 +188,11 @@ class MonthBudget(LoginRequiredMixin, View):
             'left_display': _num(left),
             'left_state': left_state,
             'left_overspend_percent': left_overspend_percent,
+            'budgeted_expenses_display': _num(budgeted_expenses),
+            'budgeted_income_display': _num(budgeted_income),
+            'average_income_display': _num(average_income),
+            'paychecks_per_year': PAYCHECKS_PER_YEAR,
+            'budgeted_paychecks_per_year': BUDGETED_PAYCHECKS_PER_MONTH * 12,
             'is_current_month': is_current_month,
             'day_of_month': today.day,
             'days_in_month': days_in_month,

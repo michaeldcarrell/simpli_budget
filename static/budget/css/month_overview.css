@@ -100,3 +100,45 @@
     font-size: 12px;
     color: var(--sb-dim);
 }
+
+/* Info icon beside the "Left" label; its tooltip shows how Left and its colour were worked out. */
+.left-help {
+    padding: 0 0 0 2px;
+    line-height: 1;
+    vertical-align: baseline;
+    color: var(--bs-secondary-color);
+}
+
+.left-help svg {
+    width: 12px;
+    height: 12px;
+}
+
+.left-help:hover,
+.left-help:focus-visible {
+    color: var(--bs-primary);
+}
+
+.left-help-tooltip {
+    --bs-tooltip-max-width: 300px;
+    --bs-tooltip-font-size: 0.8125rem;
+}
+
+.left-help-tooltip .tooltip-inner {
+    text-align: left;
+}
+
+.left-help-sum {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 12px;
+}
+
+.left-help-sum span:nth-last-child(-n+2) {
+    border-top: 1px solid currentColor;
+    font-weight: 600;
+}
+
+.left-help-note {
+    margin-top: 6px;
+}
