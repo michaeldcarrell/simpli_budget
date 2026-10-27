@@ -139,6 +139,7 @@
     font-weight: 600;
 }
 
+.left-help-sum + .left-help-sum,
 .left-help-note {
     margin-top: 6px;
 }

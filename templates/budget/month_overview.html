@@ -51,14 +51,18 @@
                             <span>&minus; Spent</span><span class="num">{{ spent_display }}</span>
                             <span>= Left</span><span class="num">{{ left_display }}</span>
                         </div>
-                        <div class="left-help-note">
-                            Average income <span class="num">{{ average_income_display }}</span>: budgeted income
-                            <span class="num">{{ budgeted_income_display }}</span> &times; {{ paychecks_per_year }}/{{ budgeted_paychecks_per_year }}
-                            paychecks a year.
+                        <div class="left-help-sum">
+                            <span>Average income</span><span class="num">{{ average_income_display }}</span>
+                            <span>Actual income</span><span class="num">{{ income_display }}</span>
+                            <span>Red line (greater)</span><span class="num">{{ income_limit_display }}</span>
                         </div>
                         <div class="left-help-note">
-                            Green within budget, yellow to orange over budget but within average income,
-                            red over average income.
+                            Average income is budgeted income <span class="num">{{ budgeted_income_display }}</span>
+                            &times; {{ paychecks_per_year }}/{{ budgeted_paychecks_per_year }}, for {{ paychecks_per_year }} paychecks a year.
+                        </div>
+                        <div class="left-help-note">
+                            Green within budget, yellow to orange over budget but under the red line,
+                            red over the red line.
                         </div>
                     {% endfilter %}">{% include "notifications/_info_icon.html" %}</button>
             </span>
