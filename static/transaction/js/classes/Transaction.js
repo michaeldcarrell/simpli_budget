@@ -7,7 +7,7 @@ class Transaction {
         let token = getCSRFToken();
         let loader = new Loader();
         loader.show();
-        fetch(`/api/transaction/${this.transaction_id}/category`, {
+        return fetch(`/api/transaction/${this.transaction_id}/category`, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': token,
@@ -29,6 +29,7 @@ class Transaction {
                 window.location.reload();
             }
             loader.resolve();
+            return data.status_code === 200;
         }).catch(e => {
             loader.resolve();
             alert(`Transaction Failed: ${e.message}`)

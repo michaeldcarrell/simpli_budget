@@ -65,10 +65,16 @@ let controller = function() {
             categorySelector.addEventListener('change', function() {
                 let transaction_id = categorySelector.getAttribute('transaction_id');
                 let transaction = new Transaction(transaction_id);
-                transaction.setCategory(categorySelector.value, false);
-                if (objs.categoryMonth.transaction_count === 0) {
-                    window.location.href = `/budget?month=${objs.categoryMonth.month_id}`;
-                }
+                transaction.setCategory(categorySelector.value, false).then(saved => {
+                    if (!saved) {
+                        return;
+                    }
+                    if (objs.categoryMonth.transaction_count === 0) {
+                        window.location.href = `/budget?month=${objs.categoryMonth.month_id}`;
+                    } else if (parseInt(categorySelector.value) !== objs.categoryMonth.category_id) {
+                        categorySelector.closest('.category-month-transaction').classList.add('d-none');
+                    }
+                });
             })
         })
 
