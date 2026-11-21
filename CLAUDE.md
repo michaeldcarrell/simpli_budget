@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-Simpli Budget is a personal, multi-user budgeting app: Django server-rendered templates + vanilla JS on the frontend, a small DRF JSON API for AJAX calls, and Postgres (hosted on GCP, not local) for storage. Plaid is used to pull bank account/transaction data.
+Simpli Budget is a personal, multi-user budgeting app: Django server-rendered templates + vanilla JS on the frontend, a small DRF JSON API for AJAX calls, and Postgres (on the home server's host Postgres, database `simplibudget`) for storage. Plaid is used to pull bank account/transaction data.
 
 ## Commands
 
@@ -88,7 +88,28 @@ Styling is Bootstrap 5.3 themed as "Night Ledger": `static/global/css/global.css
 ### Surrounding infrastructure (outside this repo)
 This app is one piece of a larger personal-infra setup, which matters when reasoning about where data comes from or where a job should live:
 - **A home server** runs this app (via Docker/Portainer, container name `simpli_budget`, project `budget`) alongside the other services in this ecosystem, including Airflow — local-only, no external hosting. See [`../STACK_TOPOLOGY.md`](../STACK_TOPOLOGY.md) for the live deployment details (it's a Pattern B stack — the repo's `docker-compose.yaml` is not authoritative).
-- **Google Cloud** hosts the Postgres database this app reads/writes, as a managed database service — not on the home server (see "The database is external and unmanaged" above for why it's external and unmigrated from here). A future migration of the database to the home server is possible but hasn't happened yet.
+- **The home server's host Postgres** holds the `simplibudget` database this app reads/writes (the container reaches it at the host's LAN IP). Its schema is unmanaged by Django; changes are numbered `sql/` files (see "Local development" below). Local dev uses the `simplibudget_dev` copy.
 - **Manual refresh:** groups listed in `REFRESH_GROUP_IDS` get a "Bank sync" section on the accounts page whose Refresh now button triggers Airflow's `plaid_nightly_refresh` DAG through Airflow's REST API (`helpers/airflow.py`, `TransactionRefreshAPI` at `/api/transactions/refresh`; refuses while a run is queued/running). It logs in as a dedicated Airflow user `simpli_budget` whose FAB role `SimpliBudgetRefresh` only has read/edit on `DAG:plaid_nightly_refresh` and read/create on `DAG Run:plaid_nightly_refresh` (FAB requires DAG *edit* to trigger). The app reaches Airflow at `http://airflow-airflow-apiserver-1:8080` over the shared `proxy` network. The DAG syncs every group's banks, not just the requester's.
 - **PTO tab:** groups configured in the `PTO_FUNDS` env var (JSON, see `settings.py`) get a PTO tab (`helpers/pto.py`) and a PTO option in their notification summary: an account's balance minus a tax rate times the quarter's income. The config stays out of the repo because it describes real people's finances; Airflow's `classes/budget/pto.py` keeps its own copy for the summary, so change both together.
 - **Airflow on the home server** runs the scheduled jobs that keep data current — e.g. pulling new Plaid transactions into the DB. Those jobs are custom Python scripts living outside this repo, not Django management commands. This repo has no Celery/cron/task-queue infrastructure of its own and isn't expected to grow one; new recurring/background work belongs in an Airflow DAG on the home server, not in this codebase.
+
+## Local development
+
+Local dev runs against `simplibudget_dev` (a scrubbed copy of `simplibudget`), never production.
+Process: `../DEV_ENVIRONMENT.md` and the `local-dev` skill. Schema changes are
+**numbered `sql/NNNN_*.sql` files (db-migrate skill), applied with `run-sql`**, applied to dev first, then prod.
+
+```bash
+~/apps/dev_tools/devrun simpli_budget runserver        # http://127.0.0.1:8103  (user runs; uses .env.dev)
+~/apps/dev_tools/devrun simpli_budget migrate              # Django contrib tables only
+~/apps/dev_tools/run-sql simpli_budget dev  sql/NNNN_name.sql   # then test, then:
+~/apps/dev_tools/run-sql simpli_budget prod sql/NNNN_name.sql
+~/apps/dev_tools/migration-status simpli_budget        # files vs. applied on dev and prod (read-only)
+~/apps/dev_tools/schema-diff simpli_budget             # prod vs dev structure (read-only)
+```
+
+The database name comes from `CBA_POSTGRES_DB_NAME` (default `simplibudget`). The
+older unnumbered files in `sql/` predate tracking. In dev, `AIRFLOW_API_URL` is
+empty and `PLAID_SECRET` is a dummy value, and the dev copy's Plaid access
+tokens are replaced (`dev_tools/overrides/simpli_budget.env`,
+`dev_tools/scrub/simpli_budget.sql`), so dev can't trigger a sync or reach banks.
