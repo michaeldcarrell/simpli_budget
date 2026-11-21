@@ -29,6 +29,29 @@ let controller = function() {
         });
     }
 
+    // Re-renders the Spent/Budgeted/Left strip and the transaction count from the server, so the totals
+    // follow transactions moved out of this category without reloading (and resetting) the list.
+    let refreshSummary = function() {
+        return fetch(window.location.href, {headers: {'Accept': 'text/html'}})
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Status ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(html => {
+                let page = new DOMParser().parseFromString(html, 'text/html');
+                ['category-summary', 'category-tx-count'].forEach(id => {
+                    let current = document.getElementById(id);
+                    let fresh = page.getElementById(id);
+                    if (current && fresh) {
+                        current.replaceWith(fresh);
+                    }
+                });
+            })
+            .catch(e => console.error('Could not refresh category totals', e));
+    }
+
     let saveBudget = function(event) {
         event.preventDefault();
         let raw = objs.sheetAmount.value.replace(/[$,\s]/g, '');
@@ -73,6 +96,7 @@ let controller = function() {
                         window.location.href = `/budget?month=${objs.categoryMonth.month_id}`;
                     } else if (parseInt(categorySelector.value) !== objs.categoryMonth.category_id) {
                         categorySelector.closest('.category-month-transaction').classList.add('d-none');
+                        refreshSummary();
                     }
                 });
             })

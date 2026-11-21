@@ -13,7 +13,7 @@
     <p class="eyebrow mt-3 mb-1">{{ month_label }}</p>
     <h1 class="detail-title">{{ category_month.category.category_name }}</h1>
 
-    <section class="stat-strip mt-3" aria-label="Category summary">
+    <section id="category-summary" class="stat-strip mt-3" aria-label="Category summary" aria-live="polite">
         <div>
             <span class="stat-label">{% if is_income %}Received{% else %}Spent{% endif %}</span>
             <span class="stat-value {% if left_is_over %}text-over{% endif %}">{{ spent_display }}</span>
@@ -44,7 +44,7 @@
     <section class="ledger-section">
         <div class="ledger-section-header">
             <h2 class="eyebrow m-0">Transactions</h2>
-            <span class="num small text-body-secondary">{{ category_month.transactions|length }}</span>
+            <span id="category-tx-count" class="num small text-body-secondary">{{ category_month.transactions|length }}</span>
         </div>
     {% for transaction in category_month.transactions %}
         <div class="category-tx category-month-transaction">
