@@ -44,13 +44,18 @@
     <section class="ledger-section">
         <div class="ledger-section-header">
             <h2 class="eyebrow m-0">Transactions</h2>
-            <span id="category-tx-count" class="num small text-body-secondary">{{ category_month.transactions|length }}</span>
+            <span id="category-tx-count" class="num small text-body-secondary">{{ category_month.allocations|length }}</span>
         </div>
-    {% for transaction in category_month.transactions %}
+    {% for allocation in category_month.allocations %}
+    {% with transaction=allocation.transaction %}
         <div class="category-tx category-month-transaction">
             <a class="category-tx-name" href="/transaction/{{ transaction.transaction_id }}">{{ transaction.name }}</a>
-            <span class="category-tx-amount num">{{ transaction.display_amount|cut:"$" }}</span>
-            <span class="category-tx-date">{{ transaction.date.date|date:"D M j" }} &middot; {{ transaction.account.display_name }}</span>
+            <span class="category-tx-amount num">{{ allocation.display_amount|cut:"$" }}</span>
+            <span class="category-tx-date">{{ transaction.date.date|date:"D M j" }} &middot; {{ transaction.account.display_name }}{% if allocation.is_split %} &middot; <span class="category-tx-split">split of {{ transaction.display_amount|cut:"$" }}</span>{% endif %}</span>
+            {% if not allocation.is_remainder %}
+            {# A split line's category is changed from the transaction's Split sheet, not here. #}
+            <a class="category-tx-select category-tx-split-line btn btn-sm btn-outline-secondary" href="/transaction/{{ transaction.transaction_id }}">Edit split</a>
+            {% else %}
             <div class="category-tx-select">
                 <label class="visually-hidden" for="category-select-{{ transaction.transaction_id }}">Category for {{ transaction.name }}</label>
                 <select id="category-select-{{ transaction.transaction_id }}" class="transaction-category-selector selectpicker form-control" data-width="100%" data-style="btn-sm btn-outline-secondary" data-live-search="true" transaction_id="{{ transaction.transaction_id }}">
@@ -65,7 +70,9 @@
                 {% endfor %}
                 </select>
             </div>
+            {% endif %}
         </div>
+    {% endwith %}
     {% empty %}
         <p class="text-body-secondary text-center py-5 mb-0">No transactions in this category this month.</p>
     {% endfor %}

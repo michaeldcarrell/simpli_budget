@@ -22,6 +22,9 @@
             {% if demo_enabled %}
             <a href="/demo" class="btn btn-outline-secondary btn-lg">Try the demo</a>
             {% endif %}
+            {% if dev_login_enabled %}
+            <a href="/dev-login" class="btn btn-outline-secondary btn-lg">Dev sign-in</a>
+            {% endif %}
         </div>
         {% if demo_enabled %}
         <p class="small text-body-secondary mt-2 mb-0">The demo needs no account: look around a sample household's budget.</p>

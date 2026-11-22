@@ -69,4 +69,35 @@ class Transaction {
             throw e;
         })
     }
+
+    // Replaces the split lines ([{category_id, amount}], amounts positive). Resolves to the transaction,
+    // or rejects with the server's message.
+    setSplits(lines) {
+        return this.#splitsRequest('PUT', {splits: lines});
+    }
+
+    clearSplits() {
+        return this.#splitsRequest('DELETE');
+    }
+
+    #splitsRequest(method, body) {
+        let loader = new Loader();
+        loader.show();
+        return fetch(`/api/transaction/${this.transaction_id}/splits`, {
+            method: method,
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json',
+            },
+            body: body === undefined ? undefined : JSON.stringify(body),
+        }).then(async response => {
+            let data = await response.json().catch(() => ({}));
+            if (response.status !== 200) {
+                throw new Error(data.message || `Saving the split failed (status ${response.status})`);
+            }
+            return data;
+        }).finally(() => {
+            loader.resolve();
+        });
+    }
 }

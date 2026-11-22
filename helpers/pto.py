@@ -10,7 +10,7 @@ from datetime import date, datetime as dt, timedelta
 from django.conf import settings
 from pytz import UTC
 
-from simpli_budget.models import Accounts, Transactions
+from simpli_budget.models import Accounts, TransactionAllocation
 
 # A balance older than this gets a "reconnect" warning, since the PTO figure is only as fresh as it.
 STALE_AFTER = timedelta(hours=36)
@@ -24,7 +24,7 @@ class PtoFund:
     quarter_label: str
     quarter_income: float
     tax_rate: float
-    income_transactions: list[Transactions]
+    income_transactions: list[TransactionAllocation]
 
     @property
     def taxes_set_aside(self) -> float:
@@ -65,13 +65,13 @@ def pto_fund(group_id: int, today: date | None = None) -> PtoFund | None:
     quarter_start = _quarter_start(today)
     # Income categories can also hold outgoing transfers (e.g. contributions to the fund); only money received
     # counts as income, and Plaid records money in as a negative amount.
+    # Allocations, so only the income category's share of a split transaction counts.
     income_transactions = [
-        t for t in Transactions.objects.filter(
+        t for t in TransactionAllocation.objects.filter(
             category_id=config['income_category_id'],
-            account__deleted=False,
             date__date__gte=quarter_start,
             date__date__lte=today,
-        ).exclude(deleted=True).order_by('-date')
+        ).select_related('transaction', 'category__category_type').order_by('-date')
         if t.amount is not None and t.amount < 0
     ]
     quarter_income = -sum(t.amount for t in income_transactions)

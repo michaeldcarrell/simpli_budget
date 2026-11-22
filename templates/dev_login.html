@@ -1,0 +1,23 @@
+{% extends "_layout.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block body %}
+<div class="page-narrow">
+    <h1 class="page-title">Dev sign-in</h1>
+    <p class="page-subtitle">Development copy only. Pick who to sign in as; no Google needed.</p>
+    <section class="ledger-section">
+    {% for user in users %}
+        <form method="post" class="list-row">
+            {% csrf_token %}
+            <input type="hidden" name="user_id" value="{{ user.pk }}">
+            <span class="min-w-0">
+                <span class="list-row-name d-block">{{ user.get_full_name|default:user.username }}</span>
+                <span class="list-row-meta d-block">{{ user.email }}</span>
+            </span>
+            <button type="submit" class="btn btn-sm btn-outline-secondary">Sign in</button>
+        </form>
+    {% empty %}
+        <p class="text-body-secondary text-center py-5 mb-0">No users in this database.</p>
+    {% endfor %}
+    </section>
+</div>
+{% endblock %}

@@ -1,3 +1,6 @@
+from decimal import Decimal, InvalidOperation
+
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.conf import settings
 from django.db.models import QuerySet
@@ -13,6 +16,15 @@ def money_as_float(field):
     val = field.replace("$", "")
     val = val.replace(",", "")
     return float(val)
+
+def money_as_decimal(field) -> Decimal | None:
+    """A money column's text (e.g. '-$1,234.56') as an exact Decimal, for arithmetic that must add up to the cent."""
+    if field is None:
+        return None
+    try:
+        return Decimal(str(field).replace("$", "").replace(",", ""))
+    except InvalidOperation:
+        return None
 
 def money_display(field, amount_inverted: bool = False):
     if type(field) is str:
@@ -281,14 +293,10 @@ class Categories(models.Model):
         }
 
     def monthly_amount(self, year_month: int) -> float:
+        # Allocations, not transactions: a split transaction only counts its share here.
         monthly_amount = 0
-        transactions = self.transactions_set.filter(
-            date__year_month=year_month,
-            account__deleted=False,
-            deleted=False,
-        )
-        for transaction in transactions:
-            monthly_amount += transaction.amount
+        for allocation in self.transactionallocation_set.filter(date__year_month=year_month):
+            monthly_amount += allocation.amount
         if self.category_type.invert_amounts:
             monthly_amount = -monthly_amount
         return round(monthly_amount, 2)
@@ -353,12 +361,11 @@ class CategoryMonth(models.Model):
     updated_at = models.DateTimeField(null=False, auto_now=True)
 
     @property
-    def transactions(self):
-        return self.category.transactions_set.filter(
+    def allocations(self):
+        """This category's share of each live transaction in the month (a split transaction appears with its share)."""
+        return self.category.transactionallocation_set.filter(
             date__year_month=self.year_month,
-            account__deleted=False,
-            deleted=False,
-        ).order_by('-date')
+        ).select_related('transaction', 'transaction__account', 'date').order_by('-date', 'transaction_id')
 
     @property
     def month(self):
@@ -461,11 +468,11 @@ class BudgetMonth:
         for category_type in self.category_types:
             expense = not category_type.category_type.invert_amounts
             for category_month in category_type.categories:
-                for transaction in category_month.transactions:
+                for allocation in category_month.allocations:
                     if expense:
-                        expenses += transaction.amount
+                        expenses += allocation.amount
                     else:
-                        income += transaction.amount
+                        income += allocation.amount
         return {
             'income': money_display(income, amount_inverted=True),
             'expenses': money_display(expenses),
@@ -621,6 +628,23 @@ class Transactions(models.Model):
     def group(self):
         return self.account.group
 
+    @property
+    def split_lines(self) -> list:
+        """The extra split lines, in the order they were entered. Empty when the transaction isn't split."""
+        return list(self.splits.select_related('category__category_type').order_by('sort_index', 'transaction_split_id'))
+
+    @property
+    def is_split(self) -> bool:
+        return self.splits.exists()
+
+    @property
+    def remainder(self) -> Decimal | None:
+        """What the transaction's own category gets: the amount minus every split line."""
+        amount = money_as_decimal(self._amount)
+        if amount is None:
+            return None
+        return amount - sum((line.amount_decimal for line in self.splits.all()), Decimal('0'))
+
     def to_list(self, fields: list[str], public: bool = True):
         transaction = self.to_dict(public=public)
         transaction_list = []
@@ -654,6 +678,8 @@ class Transactions(models.Model):
             'website': self.website,
             'logo_url': self.logo_url,
             'group': self.group.to_dict(),
+            'splits': [line.to_dict() for line in self.split_lines],
+            'remainder': float(self.remainder) if self.remainder is not None else None,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
         }
@@ -665,6 +691,83 @@ class Transactions(models.Model):
 
     def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
         return GroupUser.objects.filter(group=self.account.group, user=user).exists()
+
+
+class TransactionSplit(models.Model):
+    """
+    One extra category line of a split transaction (BUDGET-1). The transaction's own category_id keeps the
+    remainder, so the lines can never add up to more or less than the transaction. Amounts carry the
+    transaction's sign. Read TransactionAllocation for per-category amounts.
+    """
+    transaction_split_id = models.AutoField(primary_key=True)
+    transaction = models.ForeignKey(Transactions, models.CASCADE, related_name='splits')
+    category = models.ForeignKey(Categories, models.DO_NOTHING, related_name='+')
+    _amount = models.TextField(db_column='amount')
+    sort_index = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def amount(self) -> float:
+        return money_as_float(self._amount)
+
+    @property
+    def amount_decimal(self) -> Decimal:
+        return money_as_decimal(self._amount)
+
+    def to_dict(self) -> dict:
+        return {
+            'transaction_split_id': self.transaction_split_id,
+            'category_id': self.category_id,
+            'category_name': self.category.category_name,
+            'amount': self.amount,
+            'display_amount': money_display(
+                field=self.amount,
+                amount_inverted=self.category.category_type.invert_amounts,
+            ),
+            'sort_index': self.sort_index,
+        }
+
+    class Meta:
+        managed = False
+        db_table = '"budget"."transaction_split"'
+        unique_together = (('transaction', 'category'),)
+
+    def user_has_access(self, user: settings.AUTH_USER_MODEL) -> bool:
+        return self.transaction.user_has_access(user)
+
+
+class TransactionAllocation(models.Model):
+    """
+    Read-only view (budget.transaction_allocation): each live transaction's share per category. An unsplit
+    transaction is one row; a split one is a row per split line plus its remainder on its own category.
+    Deleted transactions and accounts are already left out. Sum this, never Transactions, for money by category.
+    """
+    allocation_id = models.TextField(primary_key=True)
+    transaction = models.ForeignKey(Transactions, models.DO_NOTHING, related_name='allocations')
+    transaction_split_id = models.IntegerField(blank=True, null=True)
+    category = models.ForeignKey(Categories, models.DO_NOTHING)
+    _amount = models.TextField(db_column='amount')
+    date = models.ForeignKey(Date, models.DO_NOTHING, to_field="date", db_column="date", related_name='+')
+    account = models.ForeignKey(Accounts, models.DO_NOTHING, related_name='+')
+    group_id = models.IntegerField()
+    is_split = models.BooleanField()
+    is_remainder = models.BooleanField()
+
+    @property
+    def amount(self) -> float:
+        return money_as_float(self._amount)
+
+    @property
+    def display_amount(self):
+        return money_display(
+            field=self.amount,
+            amount_inverted=self.category.category_type.invert_amounts
+        )
+
+    class Meta:
+        managed = False
+        db_table = '"budget"."transaction_allocation"'
 
 
 class TagType(models.Model):
@@ -825,6 +928,10 @@ class TransactionSearch(models.Model):
     account = models.TextField(blank=False, null=False)
     category = models.TextField(blank=False, null=False)
     tags = models.TextField(blank=True, null=True)
+    # Every category the transaction is allocated to (more than one when split); filter with category_ids__contains.
+    category_ids = ArrayField(models.IntegerField())
+    category_names = models.TextField()
+    split_count = models.IntegerField()
 
     class Meta:
         managed = False

@@ -9,7 +9,8 @@ class CategoryMonth {
     }
 
     get transaction_count() {
-        let count = 0;
+        // Split lines have no picker (they're edited on the transaction page) but still belong here.
+        let count = document.getElementsByClassName('category-tx-split-line').length;
         for (let i = 0; i < this.transactions.length; i++) {
             if (parseInt(this.transactions[i].value) === this.category_id) {
                 count++;

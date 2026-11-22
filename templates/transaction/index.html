@@ -1,6 +1,9 @@
 {% extends "_layout.html" %}
 {% load static %}
 {% block title %}{{ title }}{% endblock %}
+{% block styles %}
+    <link href="{% static 'transaction/css/transaction.css' %}" rel="stylesheet">
+{% endblock %}
 {% block body %}
 <div class="page-narrow">
     <a href="/transactions/search" class="back-link" id="transaction-back">
@@ -22,7 +25,7 @@
 
     <div class="d-flex flex-column gap-3 mt-4">
         <div>
-            <label for="category" class="stat-label d-block mb-1">Category</label>
+            <label for="category" class="stat-label d-block mb-1">Category{% if split_lines %} <span class="text-body-secondary">&middot; gets what's left of the split</span>{% endif %}</label>
             <select id="category" class="form-control selectpicker" data-width="100%" data-live-search="true">
                 {% regroup categories by category_type as category_groups %}
                 {% for group in category_groups %}
@@ -35,6 +38,11 @@
                 {% endfor %}
             </select>
         </div>
+        {% if not demo_read_only and can_split and not split_lines %}
+        <button type="button" class="btn btn-outline-secondary align-self-start" data-bs-toggle="offcanvas" data-bs-target="#split-sheet">Split across categories</button>
+        {% elif not can_split and not split_lines and transaction.pending %}
+        <p class="small text-body-secondary mb-0">This transaction is pending. It can be split once it posts.</p>
+        {% endif %}
         <div>
             <label for="tags" class="stat-label d-block mb-1">Tags</label>
             <select id="tags" class="form-control selectpicker" data-width="100%" title="No tags" multiple>
@@ -50,7 +58,83 @@
             </select>
         </div>
     </div>
+
+    {% if split_lines %}
+    <section class="ledger-section" aria-labelledby="split-heading">
+        <div class="ledger-section-header">
+            <h2 class="eyebrow m-0" id="split-heading">Split</h2>
+            {% if not demo_read_only %}
+            <span class="d-flex gap-3">
+                <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="offcanvas" data-bs-target="#split-sheet">Edit</button>
+                <button type="button" class="btn btn-link btn-sm p-0" id="split-remove">Unsplit</button>
+            </span>
+            {% endif %}
+        </div>
+        <div class="list-row">
+            <span class="min-w-0">
+                <span class="list-row-name d-block" id="split-remainder-name">{{ transaction.category.category_name }}</span>
+                <span class="list-row-meta d-block">What's left</span>
+            </span>
+            <span class="num">{{ remainder_display }}</span>
+        </div>
+        {% for line in split_lines %}
+        <div class="list-row">
+            <span class="list-row-name min-w-0">{{ line.category_name }}</span>
+            <span class="num">{{ line.amount_display }}</span>
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
 </div>
+
+{% if not demo_read_only and can_split %}
+{{ split_data|json_script:"split-data" }}
+<template id="split-line-template">
+    <div class="split-line">
+        <select class="form-select split-line-category" aria-label="Category">
+            <option value="" selected disabled>Category</option>
+            {% regroup categories by category_type as category_groups %}
+            {% for group in category_groups %}
+            <optgroup label="{{ group.grouper.category_type_name }}">
+                {% for category in group.list %}
+                <option value="{{ category.category_id }}">{{ category.category_name }}</option>
+                {% endfor %}
+            </optgroup>
+            {% endfor %}
+        </select>
+        <div class="budget-amount-field split-line-amount-field">
+            <span class="num" aria-hidden="true">$</span>
+            <input type="text" inputmode="decimal" class="num split-line-amount" autocomplete="off" aria-label="Amount" placeholder="0.00">
+        </div>
+        <button type="button" class="btn-close split-line-remove" aria-label="Remove line"></button>
+    </div>
+</template>
+<div class="offcanvas offcanvas-bottom app-sheet" tabindex="-1" id="split-sheet" aria-labelledby="split-sheet-title">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="offcanvas-header pb-0 align-items-start">
+        <div>
+            <h2 class="offcanvas-title fs-5 fw-semibold" id="split-sheet-title">Split {{ amount_display }}</h2>
+            <p class="small text-body-secondary mb-0">Whatever the lines don't cover stays in the transaction's category.</p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form id="split-form" class="d-flex flex-column gap-3" novalidate>
+            <div id="split-lines" class="d-flex flex-column gap-2"></div>
+            <button type="button" id="split-add-line" class="btn btn-link p-0 align-self-start">+ Add line</button>
+            <div class="list-row split-remaining" aria-live="polite">
+                <span class="min-w-0">
+                    <span class="list-row-name d-block" id="split-remaining-name"></span>
+                    <span class="list-row-meta d-block">What's left</span>
+                </span>
+                <span class="num" id="split-remaining-amount"></span>
+            </div>
+            <p id="split-error" class="text-over small mb-0 d-none" role="alert"></p>
+            <button type="submit" class="btn btn-primary num">SAVE</button>
+        </form>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 {% block scripts %}
     <script src="{% static 'transaction/js/classes/Transaction.js' %}"></script>

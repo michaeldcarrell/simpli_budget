@@ -40,6 +40,10 @@
     width: 180px;
 }
 
+.category-tx-split {
+    color: var(--sb-accent);
+}
+
 /* Phones: the category picker gets its own full-width line. */
 @media (max-width: 575.98px) {
     .category-tx-select {

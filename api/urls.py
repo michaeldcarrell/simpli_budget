@@ -4,6 +4,7 @@ from api.views import *
 urlpatterns = [
     path('transaction/<str:transaction_id>/category', TransactionCategoryAPI.as_view(), name='Transaction Category'),
     path('transaction/<str:transaction_id>/tags', TransactionTagsAPI.as_view(), name='Transaction Tags'),
+    path('transaction/<str:transaction_id>/splits', TransactionSplitsAPI.as_view(), name='Transaction Splits'),
     path('transactions', TransactionsAPI.as_view(), name='Transactions'),
     path('transactions/refresh', TransactionRefreshAPI.as_view(), name='Transaction Refresh'),
     path('accounts/<str:account_id>/link_token', PlaidLinkTokenAPI.as_view(), name='Plaid Link Token'),

@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Min
 from django.shortcuts import render
 from django.views import View
-from simpli_budget.models import CategoryType, Transactions, get_user_group, money_as_float
+from simpli_budget.models import CategoryType, TransactionAllocation, get_user_group, money_as_float
 
 AVERAGE_MONTHS = 3
 
@@ -29,11 +29,10 @@ def _set_monthly_averages(group_id: int, sections: list[dict]) -> None:
     """
     categories = [category for section in sections for category in section["categories"]]
     window = _previous_year_months(AVERAGE_MONTHS)
-    transactions = Transactions.objects.filter(
+    # Allocations, so a split transaction counts toward each of its categories by its share.
+    transactions = TransactionAllocation.objects.filter(
         category_id__in=[category.category_id for category in categories],
-        account__group_id=group_id,
-        account__deleted=False,
-        deleted=False,
+        group_id=group_id,
     )
     first_year_months = dict(
         transactions.values("category_id").annotate(first=Min("date__year_month")).values_list("category_id", "first")

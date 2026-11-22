@@ -48,6 +48,7 @@ class Landing(View):
             "signed_out": "signed_out" in request.GET,
             "google_login_url": google_login_url,
             "demo_enabled": settings.DEMO_GROUP_ID is not None,
+            "dev_login_enabled": settings.DEV_LOGIN_ENABLED,
         })
 
 
@@ -62,4 +63,31 @@ class Demo(View):
         if demo_user is None or not GroupUser.objects.filter(user=demo_user, group_id=settings.DEMO_GROUP_ID).exists():
             raise Http404("Demo not found")
         login(request, demo_user, backend="django.contrib.auth.backends.ModelBackend")
+        return redirect("/budget")
+
+
+class DevLogin(View):
+    """
+    Dev servers only (settings.DEV_LOGIN_ENABLED): sign in as any existing user without Google, since Google
+    won't redirect back to a LAN name like http://budget.lan. The URL isn't routed anywhere else, and the
+    setting is re-checked here in case it is.
+    """
+    def dispatch(self, request, *args, **kwargs):
+        if not settings.DEV_LOGIN_ENABLED:
+            raise Http404()
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request):
+        users = (
+            get_user_model().objects.filter(is_active=True)
+                .exclude(username=settings.DEMO_USERNAME)
+                .order_by("first_name", "email")
+        )
+        return render(request, "dev_login.html", {"title": "Dev sign-in", "users": users})
+
+    def post(self, request):
+        user = get_user_model().objects.filter(pk=request.POST.get("user_id"), is_active=True).first()
+        if user is None:
+            raise Http404()
+        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
         return redirect("/budget")

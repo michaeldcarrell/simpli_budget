@@ -55,6 +55,8 @@ class Transaction(LoginRequiredMixin, View):
 
         amount = transaction.amount
         is_inflow = amount < 0
+        split_lines = transaction.split_lines
+        remainder = transaction.remainder
         context = {
             'title': transaction.name,
             'transaction': transaction,
@@ -62,6 +64,20 @@ class Transaction(LoginRequiredMixin, View):
             'transaction_tags': current_transaction_tags,
             'amount_display': f"{'+' if is_inflow else ''}${abs(amount):,.2f}",
             'is_inflow': is_inflow,
+            # Split amounts are shown unsigned, like the headline amount; they all share its direction.
+            'split_lines': [
+                {'category_name': line.category.category_name, 'amount_display': f"${abs(line.amount):,.2f}"}
+                for line in split_lines
+            ],
+            'remainder_display': f"${abs(remainder):,.2f}" if remainder is not None else None,
+            'can_split': not transaction.pending and amount != 0,
+            'split_data': {
+                'total': abs(amount),
+                'lines': [
+                    {'category_id': line.category_id, 'amount': f"{abs(line.amount):.2f}"}
+                    for line in split_lines
+                ],
+            },
             'details': [
                 ('Date', transaction.date.date.strftime('%a %b %-d, %Y')),
                 ('Account', transaction.account.display_name),

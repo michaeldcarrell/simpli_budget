@@ -30,12 +30,15 @@ from simpli_budget.models import (
     Categories,
     CategoryMonth,
     TransactionSearch,
+    TransactionSplit,
     UserAttributes,
+    money_as_decimal,
     NotificationCategories,
     NotificationAccounts,
 )
 from helpers.plaid import Plaid
 from helpers.demo_data import generate_recent_activity
+from helpers.splits import SplitError, build_split_lines
 from django.utils import timezone
 from helpers.airflow import AirflowError, latest_refresh, refresh_allowed, trigger_refresh
 from helpers.chat import (
@@ -66,9 +69,14 @@ class TransactionCategoryAPI(APIView):
         transaction = Transactions.objects.get(transaction_id=transaction_id)
         if not transaction.user_has_access(request.user):
             return Response(data={'message': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
-        transaction.category_id = int(request.data['category_id'])
-        transaction.updated_at = dt.now()
-        transaction.save()
+        category_id = int(request.data['category_id'])
+        with db_transaction.atomic():
+            transaction.category_id = category_id
+            transaction.updated_at = dt.now()
+            transaction.save()
+            # The transaction's own category gets a split's remainder, so a split line on the same category
+            # would count twice: fold it into the remainder.
+            transaction.splits.filter(category_id=category_id).delete()
         # A human just set the category directly, so the AI categorizer's tags no longer
         # describe how this transaction was categorized - drop them so it isn't picked up
         # as "already handled by AI" or shown as AI-sourced in the UI.
@@ -104,6 +112,79 @@ class TransactionTagsAPI(APIView):
             data=[tag.to_dict() for tag in transaction.transactiontag_set.all()],
             status=status.HTTP_200_OK
         )
+
+
+class TransactionSplitsAPI(APIView):
+    """
+    Split a transaction across categories (BUDGET-1). PUT replaces every extra line with
+    {"splits": [{"category_id", "amount"}]} (amounts positive, as shown; the transaction's own category
+    keeps what's left), DELETE removes the split. Both return the transaction.
+    """
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @staticmethod
+    def __get_transaction(request, transaction_id: str):
+        transaction = Transactions.objects.filter(transaction_id=transaction_id).select_related('account').first()
+        if transaction is None or not transaction.user_has_access(request.user):
+            return None
+        return transaction
+
+    @staticmethod
+    def __not_found():
+        return Response(data={'message': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request, transaction_id: str):
+        transaction = self.__get_transaction(request, transaction_id)
+        if transaction is None:
+            return self.__not_found()
+        if transaction.pending:
+            # A pending transaction is replaced by a new one when it posts; its split would be lost.
+            return Response(
+                data={'message': "A pending transaction can't be split yet. Try again once it posts."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            lines = build_split_lines(
+                total=money_as_decimal(transaction._amount),
+                primary_category_id=transaction.category_id,
+                raw_lines=request.data.get('splits'),
+            )
+        except SplitError as e:
+            return Response(data={'message': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        category_ids = {line.category_id for line in lines}
+        allowed = set(Categories.objects.filter(
+            category_id__in=category_ids,
+            category_type__group_id=transaction.account.group_id,
+            deleted=False,
+        ).values_list('category_id', flat=True))
+        if allowed != category_ids:
+            return Response(data={'message': 'Category not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        with db_transaction.atomic():
+            transaction.splits.all().delete()
+            TransactionSplit.objects.bulk_create([
+                TransactionSplit(
+                    transaction=transaction,
+                    category_id=line.category_id,
+                    _amount=f'{line.amount:.2f}',
+                    sort_index=index,
+                ) for index, line in enumerate(lines)
+            ])
+            transaction.updated_at = dt.now()
+            transaction.save(update_fields=['updated_at'])
+        return Response(data=transaction.to_dict(), status=status.HTTP_200_OK)
+
+    def delete(self, request, transaction_id: str):
+        transaction = self.__get_transaction(request, transaction_id)
+        if transaction is None:
+            return self.__not_found()
+        with db_transaction.atomic():
+            transaction.splits.all().delete()
+            transaction.updated_at = dt.now()
+            transaction.save(update_fields=['updated_at'])
+        return Response(data=transaction.to_dict(), status=status.HTTP_200_OK)
 
 
 class PlaidLinkTokenAPI(APIView):
@@ -697,7 +778,11 @@ class TransactionsAPI(APIView):
                 'name': transaction.name,
                 'amount': transaction.amount,
                 'account': transaction.account,
-                'category': transaction.category,
+                'category': (
+                    f'Split · {transaction.category_names}' if transaction.split_count
+                    else transaction.category
+                ),
+                'split_count': transaction.split_count,
                 'tags': transaction.tags
             } for transaction in group_query_set[offset:page_end]
         ]
@@ -750,7 +835,8 @@ class TransactionsAPI(APIView):
                 continue
             elif key == 'category.category_name':
                 if int(search_value) != -999:
-                    filters['category_id'] = int(search_value)
+                    # Any transaction with a share in the category, so split ones show up under each line.
+                    filters['category_ids__contains'] = [int(search_value)]
                 continue
             elif key == 'account':
                 if search_value != '-999':

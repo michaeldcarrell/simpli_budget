@@ -1,0 +1,40 @@
+/* One line of the Split sheet: category, amount, remove. Phones stack the category above the amount. */
+.split-line {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 140px auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.split-line .budget-amount-field {
+    height: 44px;
+    font-size: 16px;
+}
+
+.split-line .budget-amount-field input {
+    font-size: 17px;
+}
+
+.split-line .form-select {
+    height: 44px;
+}
+
+.split-remaining {
+    border-top: 1px solid var(--sb-line-soft);
+}
+
+.split-remaining.is-over .num {
+    color: var(--sb-over);
+}
+
+@media (max-width: 575.98px) {
+    .split-line {
+        grid-template-columns: minmax(0, 1fr) auto;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--sb-line-soft);
+    }
+
+    .split-line .split-line-category {
+        grid-column: 1 / -1;
+    }
+}

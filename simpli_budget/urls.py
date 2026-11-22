@@ -39,4 +39,7 @@ urlpatterns = [
     path("demo", views.Demo.as_view(), name="demo"),
 ]
 
+if settings.DEV_LOGIN_ENABLED:
+    urlpatterns.append(path("dev-login", views.DevLogin.as_view(), name="dev_login"))
+
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -165,6 +165,16 @@ DATABASES = {
     }
 }
 
+# Dev-only sign-in without Google (/dev-login). Google won't send a sign-in back to a LAN name like
+# http://budget.lan (dev_tools/hosts.conf), so dev servers use this instead. It's on only when DEV_LOGIN is set
+# (dev_tools/overrides/simpli_budget.env, never prod), DEBUG is on, and the database is a *_dev copy; otherwise
+# the URL doesn't exist.
+DEV_LOGIN_ENABLED = (
+    config('DEV_LOGIN', default=False, cast=bool)
+    and DEBUG
+    and DATABASES['default']['NAME'].endswith('_dev')
+)
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

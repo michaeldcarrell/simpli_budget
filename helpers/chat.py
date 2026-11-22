@@ -26,6 +26,8 @@ from simpli_budget.models import (
     ChatSession,
     Group,
     Tag,
+    TransactionAllocation,
+    TransactionSplit,
     TransactionTag,
     Transactions,
     is_demo_user,
@@ -200,7 +202,11 @@ class BudgetTools:
                 'name': 'search_transactions',
                 'description': 'Search individual transactions with optional filters. Returns matching '
                                'transactions (newest first by default) plus the total count and the sum of raw '
-                               'amounts across all matches, not just the returned page.',
+                               'amounts across all matches, not just the returned page. A transaction split '
+                               'across categories is returned once, with its full amount and a split_lines list '
+                               'of each category\'s share; filtering by category_id matches any of its lines. '
+                               'For money per category use category_totals or get_month_budget, which count '
+                               'only each category\'s share.',
                 'eager_input_streaming': True,
                 'input_schema': {
                     'type': 'object',
@@ -272,6 +278,10 @@ class BudgetTools:
             deleted=False,
         )
 
+    def _group_allocations(self):
+        """Each live transaction's share per category (split transactions count by share). Use for money by category."""
+        return TransactionAllocation.objects.filter(group_id=self.group_id)
+
     def _category_info(self, category_ids) -> dict:
         """Name/type info for the given categories. Categories 0 and -1 are shared system categories."""
         categories = Categories.objects.filter(category_id__in=set(category_ids)).select_related('category_type')
@@ -332,7 +342,7 @@ class BudgetTools:
 
         actuals = defaultdict(float)
         for category_id, amount in (
-            self._group_transactions()
+            self._group_allocations()
                 .filter(date__year_month=year_month)
                 .annotate(amount_float=_amount_float())
                 .values_list('category_id', 'amount_float')
@@ -402,7 +412,7 @@ class BudgetTools:
         if end < start:
             raise ToolInputError('end_date must be on or after start_date')
 
-        transactions = self._group_transactions().filter(date__date__gte=start, date__date__lte=end)
+        transactions = self._group_allocations().filter(date__date__gte=start, date__date__lte=end)
         if category_ids:
             if not isinstance(category_ids, list) or not all(isinstance(c, int) for c in category_ids):
                 raise ToolInputError('category_ids must be a list of integers')
@@ -440,7 +450,10 @@ class BudgetTools:
         if text:
             transactions = transactions.filter(Q(name__icontains=text) | Q(merchant_name__icontains=text))
         if category_id is not None:
-            transactions = transactions.filter(category_id=int(category_id))
+            # Any transaction with a share in the category, including split ones.
+            transactions = transactions.filter(transaction_id__in=TransactionAllocation.objects.filter(
+                group_id=self.group_id, category_id=int(category_id),
+            ).values('transaction_id'))
         if account_id:
             transactions = transactions.filter(account_id=str(account_id))
         if tag:
@@ -479,6 +492,21 @@ class BudgetTools:
             transaction_id__in=[t.transaction_id for t in page]
         ).values_list('transaction_id', 'tag__name'):
             tags_by_transaction[transaction_id].append(tag_name)
+        splits_by_transaction = defaultdict(list)
+        for split in TransactionSplit.objects.filter(
+            transaction_id__in=[t.transaction_id for t in page]
+        ).select_related('category').order_by('sort_index', 'transaction_split_id'):
+            splits_by_transaction[split.transaction_id].append(split)
+
+        def split_lines(t):
+            lines = splits_by_transaction.get(t.transaction_id)
+            if not lines:
+                return None
+            remainder = round((t.amount_float or 0) - sum(line.amount for line in lines), 2)
+            rows = [{'category_id': t.category_id, 'category_name': t.category.category_name, 'amount': remainder}]
+            rows += [{'category_id': line.category_id, 'category_name': line.category.category_name,
+                      'amount': line.amount} for line in lines]
+            return [row for row in rows if row['amount'] != 0]
 
         return {
             'total_matches': len(amounts),
@@ -496,6 +524,7 @@ class BudgetTools:
                     'account': t.account.display_name,
                     'pending': bool(t.pending),
                     'tags': tags_by_transaction.get(t.transaction_id, []),
+                    'split_lines': split_lines(t),
                 } for t in page
             ],
         }
@@ -525,7 +554,8 @@ class BudgetTools:
             tag_id__in={tag_id for body in bodies for tag_id in body.get('tag_ids') or [] if isinstance(tag_id, int)}
         ).values_list('tag_id', 'name'))
         category_info = self._category_info(
-            body['category_id'] for body in bodies if isinstance(body.get('category_id'), int)
+            [body['category_id'] for body in bodies if isinstance(body.get('category_id'), int)]
+            + [line['category_id'] for body in bodies for line in _split_lines_of(body)]
         )
 
         changes = []
@@ -540,6 +570,14 @@ class BudgetTools:
             elif event.view_name == 'Transaction Category' and 'category_id' in body:
                 change['category_after'] = category_info.get(body['category_id'], {}).get(
                     'category_name', f'category {body["category_id"]}')
+            elif event.view_name == 'Transaction Splits' and event.method == 'PUT':
+                change['split_lines_after'] = [
+                    {
+                        'category_name': category_info.get(line['category_id'], {}).get(
+                            'category_name', f'category {line["category_id"]}'),
+                        'amount': line.get('amount'),
+                    } for line in _split_lines_of(body)
+                ]
             elif body:
                 change['values'] = body
             changes.append(change)
@@ -549,8 +587,18 @@ class BudgetTools:
         }
 
 
+def _split_lines_of(body: dict) -> list[dict]:
+    """The split lines of a logged 'Transaction Splits' request body, ignoring anything malformed."""
+    lines = body.get('splits')
+    if not isinstance(lines, list):
+        return []
+    return [line for line in lines if isinstance(line, dict) and isinstance(line.get('category_id'), int)]
+
+
 CHANGE_ACTIONS = {
     ('Transaction Category', 'POST'): 'changed the transaction\'s category',
+    ('Transaction Splits', 'PUT'): 'split the transaction across categories',
+    ('Transaction Splits', 'DELETE'): 'removed the transaction\'s split',
     ('Transaction Tags', 'POST'): 'changed the transaction\'s tags',
     ('Category Delete', 'PUT'): 'edited the category',
     ('Category Delete', 'DELETE'): 'deleted the category',

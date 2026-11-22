@@ -58,7 +58,7 @@
         {% for transaction in fund.income_transactions %}
         <a class="list-row" href="/transaction/{{ transaction.transaction_id }}">
             <span class="min-w-0">
-                <span class="list-row-name d-block">{{ transaction.merchant_name|default:transaction.name }}</span>
+                <span class="list-row-name d-block">{{ transaction.transaction.merchant_name|default:transaction.transaction.name }}</span>
                 <span class="list-row-meta d-block">{{ transaction.date_id|date:"M j" }}</span>
             </span>
             <span class="num">{{ transaction.display_amount }}</span>
